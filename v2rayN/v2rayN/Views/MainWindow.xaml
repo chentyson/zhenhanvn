@@ -11,11 +11,11 @@
     xmlns:view="clr-namespace:v2rayN.Views"
     xmlns:vms="clr-namespace:ServiceLib.ViewModels;assembly=ServiceLib"
     Title="震撼外网-V3.0"
-    Width="1200"
-    Height="800"
+    Width="800"
+    Height="600"
     MinWidth="800"
     x:TypeArguments="vms:MainWindowViewModel"
-    Icon="/Resources/v2rayN.ico"
+    Icon="/Resources/hand128.ico"
     ResizeMode="CanResizeWithGrip"
     ShowInTaskbar="True"
     Style="{StaticResource WindowGlobal}"
@@ -38,7 +38,7 @@
         Style="{StaticResource MaterialDesignEmbeddedDialogHost}">
         <Grid>
             <DockPanel>
-                <ToolBarTray DockPanel.Dock="Top">
+                <ToolBarTray x:Name="toolBarTray" DockPanel.Dock="Top">
                     <ToolBar
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
@@ -280,14 +280,14 @@
                             <MenuItem
                                 x:Name="menuClose"
                                 Padding="{StaticResource MarginLeftRight8}"
-                                AutomationProperties.Name="{x:Static resx:ResUI.menuClose}">
+                                AutomationProperties.Name="{x:Static resx:ResUI.menuExit}">
                                 <MenuItem.Header>
                                     <StackPanel Orientation="Horizontal">
                                         <materialDesign:PackIcon
                                             Margin="{StaticResource MarginRight8}"
                                             VerticalAlignment="Center"
-                                            Kind="Minimize" />
-                                        <TextBlock Text="{x:Static resx:ResUI.menuClose}" />
+                                            Kind="Logout" />
+                                        <TextBlock Text="{x:Static resx:ResUI.menuExit}" />
                                     </StackPanel>
                                 </MenuItem.Header>
                             </MenuItem>
@@ -307,6 +307,7 @@
                             Content="{x:Static resx:ResUI.menuNewUpdate}"
                             Style="{StaticResource DefButton}"
                             Visibility="Hidden" />
+
                     </ToolBar>
                 </ToolBarTray>
 
@@ -434,6 +435,14 @@
                     <materialDesign:Snackbar x:Name="MainSnackbar" MessageQueue="{materialDesign:MessageQueue}" />
                 </Grid>
             </DockPanel>
+            <Image
+                x:Name="imgPubNumber"
+                Margin="0,0,10,0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Stretch="Uniform"
+                Source="/Resources/pubnumber.png"
+                ToolTip="公众号" />
         </Grid>
     </materialDesign:DialogHost>
 </base:WindowBase>

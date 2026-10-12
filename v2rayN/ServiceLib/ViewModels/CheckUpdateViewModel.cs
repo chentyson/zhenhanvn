@@ -60,11 +60,11 @@ public partial class CheckUpdateViewModel : MyReactiveObject
     {
         if (coreType == _v2rayN)
         {
-            // The v2rayN (GUI) update option is turned off and cannot be changed.
+            // The zhenhanvn (GUI) update option is enabled and open by default.
             return new()
             {
-                IsSelected = false,
-                IsEnabled = false,
+                IsSelected = _config.CheckUpdateItem.SelectedCoreTypes?.Contains(coreType.ToString()) ?? true,
+                IsEnabled = true,
                 CoreType = coreType,
                 IsGeoFile = false,
                 Remarks = Utils.IsPackagedInstall()

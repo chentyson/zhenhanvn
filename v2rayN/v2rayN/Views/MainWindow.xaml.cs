@@ -329,6 +329,71 @@ public partial class MainWindow
             ShowHideWindow(false);
         }
         RestoreUI();
+        UpdatePubNumberHeight();
+        SizeChanged += (_, _) => UpdatePubNumberHeight();
+        // Re-apply after layout completes so ActualHeight values are available on first load
+        Dispatcher.BeginInvoke(new Action(UpdatePubNumberHeight), System.Windows.Threading.DispatcherPriority.Loaded);
+    }
+
+    /// <summary>
+    /// Size the 公众号 QR image to match the combined height of the top menu bar
+    /// and the profiles toolbar row, keeping it right-aligned at the top.
+    /// </summary>
+    private void UpdatePubNumberHeight()
+    {
+        if (imgPubNumber == null || toolBarTray == null)
+        {
+            return;
+        }
+
+        var menuBarHeight = toolBarTray.ActualHeight;
+        var toolbarHeight = FindProfilesToolbarHeight();
+        var total = menuBarHeight + toolbarHeight;
+        if (total > 0)
+        {
+            // pubnumber.png is 154x148; size to match the combined menu + toolbar height.
+            imgPubNumber.Height = total;
+            imgPubNumber.Width = total * (154.0 / 148.0);
+        }
+    }
+
+    private double FindProfilesToolbarHeight()
+    {
+        // The profiles toolbar is the WrapPanel docked at the top of ProfilesView;
+        // it is the WrapPanel that contains the filter TextBox.
+        var wrapPanel = FindVisualChild<WrapPanel>(this, wp => ContainsVisualChild<TextBox>(wp));
+        return wrapPanel?.ActualHeight ?? 0;
+    }
+
+    private static T? FindVisualChild<T>(DependencyObject parent, Func<T, bool>? predicate = null) where T : DependencyObject
+    {
+        if (parent == null)
+        {
+            return null;
+        }
+
+        var count = VisualTreeHelper.GetChildrenCount(parent);
+        for (var i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is T match && (predicate == null || predicate(match)))
+            {
+                return match;
+            }
+
+            var result = FindVisualChild<T>(child, predicate);
+            if (result != null)
+            {
+                return result;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool ContainsVisualChild<T>(DependencyObject parent) where T : DependencyObject
+    {
+        return FindVisualChild<T>(parent) != null;
     }
 
     private void RestoreUI()

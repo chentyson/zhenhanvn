@@ -6,7 +6,7 @@
 		<TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
 		<GenerateSatelliteAssembliesForCore>true</GenerateSatelliteAssembliesForCore>
 		<UseWPF>true</UseWPF>
-		<ApplicationIcon>Resources\v2rayN.ico</ApplicationIcon>
+		<ApplicationIcon>Resources\hand128.ico</ApplicationIcon>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
 		<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
@@ -34,6 +34,8 @@
 		<Resource Include="Resources\NotifyIcon3.ico" />
 		<Resource Include="Resources\NotifyIcon4.ico" />
 		<Resource Include="Resources\v2rayN.ico" />
+		<Resource Include="Resources\hand128.ico" />
+		<Resource Include="Resources\pubnumber.png" />
 	</ItemGroup>
 
 	<ItemGroup>

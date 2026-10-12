@@ -46,8 +46,7 @@ public sealed class WindowsManager
 
     public System.Windows.Media.ImageSource GetAppIcon(Config config)
     {
-        var index = (int)config.SystemProxyItem.SysProxyType + 1;
-        return BitmapFrame.Create(new Uri($"pack://application:,,,/Resources/NotifyIcon{index}.ico", UriKind.RelativeOrAbsolute));
+        return BitmapFrame.Create(new Uri("pack://application:,,,/Resources/hand128.ico", UriKind.RelativeOrAbsolute));
     }
 
     private async Task<Icon?> GetNotifyIcon4Routing(Config config)
