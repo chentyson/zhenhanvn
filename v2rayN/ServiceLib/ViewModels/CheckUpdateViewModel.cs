@@ -1,3 +1,5 @@
+using System.IO.Compression;
+
 namespace ServiceLib.ViewModels;
 
 public partial class CheckUpdateViewModel : MyReactiveObject
@@ -334,10 +336,16 @@ public partial class CheckUpdateViewModel : MyReactiveObject
             }
             if (!Utils.UpgradeAppExists(out var upgradeFileName))
             {
-                await UpdateView(_v2rayN, ResUI.UpgradeAppNotExistTip);
-                NoticeManager.Instance.SendMessageAndEnqueue(ResUI.UpgradeAppNotExistTip);
-                Logging.SaveLog("UpgradeApp does not exist");
-                return;
+                // The running install may predate the bundled upgrade tool (e.g. a
+                // single-file build without AmazTool.exe). Extract it from the
+                // downloaded release zip so a first-time upgrade can still proceed.
+                if (!TryExtractUpgradeApp(fileName) || !Utils.UpgradeAppExists(out upgradeFileName))
+                {
+                    await UpdateView(_v2rayN, ResUI.UpgradeAppNotExistTip);
+                    NoticeManager.Instance.SendMessageAndEnqueue(ResUI.UpgradeAppNotExistTip);
+                    Logging.SaveLog("UpgradeApp does not exist");
+                    return;
+                }
             }
 
             var id = ProcUtils.ProcessStart(upgradeFileName, fileName, Utils.StartupPath());
@@ -349,6 +357,43 @@ public partial class CheckUpdateViewModel : MyReactiveObject
         catch (Exception ex)
         {
             await UpdateView(_v2rayN, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Extract AmazTool.exe from the downloaded release zip into the running
+    /// directory when it is not already present, so a first-time upgrade (from an
+    /// install that lacks the upgrade tool) can still be performed.
+    /// </summary>
+    private static bool TryExtractUpgradeApp(string encodedZipFileName)
+    {
+        var upgradeFileName = Path.Combine(Utils.GetBaseDirectory(), Utils.GetExeName("AmazTool"));
+        try
+        {
+            var zipFileName = Utils.UrlDecode(encodedZipFileName);
+            if (zipFileName.IsNullOrEmpty() || !File.Exists(zipFileName))
+            {
+                return false;
+            }
+
+            var exeName = Utils.GetExeName("AmazTool");
+            using var archive = ZipFile.OpenRead(zipFileName);
+            // Match the AmazTool.exe entry regardless of the top-level folder name.
+            var entry = archive.Entries.FirstOrDefault(e =>
+                string.Equals(Path.GetFileName(e.FullName), exeName, StringComparison.OrdinalIgnoreCase));
+            if (entry is null)
+            {
+                return false;
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(upgradeFileName)!);
+            entry.ExtractToFile(upgradeFileName, true);
+            return File.Exists(upgradeFileName);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("TryExtractUpgradeApp", ex);
+            return false;
         }
     }
 

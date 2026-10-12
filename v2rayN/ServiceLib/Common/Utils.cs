@@ -1023,7 +1023,7 @@ public class Utils
         return await GetCliWrapOutput(filePath, arg != null ? new List<string>() { arg } : null);
     }
 
-    public static async Task<string?> GetCliWrapOutput(string filePath, IEnumerable<string>? args)
+    public static async Task<string?> GetCliWrapOutput(string filePath, IEnumerable<string>? args, string? stdin = null)
     {
         try
         {
@@ -1038,6 +1038,11 @@ public class Utils
                 {
                     cmd = cmd.WithArguments(args);
                 }
+            }
+
+            if (stdin != null)
+            {
+                cmd = cmd.WithStandardInputPipe(PipeSource.FromString(stdin));
             }
 
             var result = await cmd.ExecuteBufferedAsync();

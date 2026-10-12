@@ -1,3 +1,5 @@
+using ServiceLib.ViewModels;
+
 namespace ServiceLib.Handler.SysProxy;
 
 [SupportedOSPlatform("macos")]
@@ -32,6 +34,26 @@ public static class ProxySettingOSX
         // TODO: temporarily notify which script is being used
         NoticeManager.Instance.SendMessage(fileName);
 
-        await Utils.GetCliWrapOutput(fileName, args);
+        // networksetup requires root on macOS. Reuse the stored sudo password,
+        // or prompt for it once so it can be reused for the session.
+        var password = AppManager.Instance.LinuxSudoPwd;
+        if (password.IsNullOrEmpty())
+        {
+            password = await StatusBarViewModel.Instance.PasswordInputInteraction.HandleSafe(RxVoid.Default);
+            if (password.IsNotEmpty())
+            {
+                AppManager.Instance.LinuxSudoPwd = password;
+            }
+        }
+
+        if (password.IsNullOrEmpty())
+        {
+            var msg = "macOS system proxy requires an administrator password. No password was provided, so the system proxy was not changed.";
+            Logging.SaveLog("ProxySettingOSX", new Exception(msg));
+            NoticeManager.Instance.Enqueue(msg);
+            return;
+        }
+
+        await Utils.GetCliWrapOutput(fileName, args, password);
     }
 }

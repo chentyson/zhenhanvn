@@ -1,5 +1,23 @@
 #!/bin/bash
 
+# Read the sudo password from stdin (first line). networksetup requires root
+# on macOS to modify network settings, so every mutating call is run via sudo.
+SUDO_PWD=""
+if [ ! -t 0 ]; then
+    IFS= read -r SUDO_PWD || true
+fi
+
+# Run a command with sudo, feeding the password via stdin.
+run_sudo() {
+    printf '%s\n' "$SUDO_PWD" | sudo -S "$@"
+}
+
+# List all network service names, dropping the leading description line and
+# the default-route asterisk marker so the default service is included too.
+get_services() {
+    networksetup -listallnetworkservices | tail -n +2 | sed 's/^\*//'
+}
+
 # Function to set proxy
 set_proxy() {
     PROXY_IP=$1
@@ -13,46 +31,62 @@ set_proxy() {
     fi
 
     # Get all network service names
-    SERVICES=$(networksetup -listallnetworkservices | grep -v '*')
+    SERVICES=$(get_services)
+    if [ -z "$SERVICES" ]; then
+        echo "Error: no network services found." >&2
+        exit 1
+    fi
 
+    local rc=0
     # Loop through each network service
-    echo "$SERVICES" | while read -r SERVICE; do
+    while IFS= read -r SERVICE; do
+        [ -z "$SERVICE" ] && continue
         echo "Setting proxy for network service '$SERVICE'..."
         # Set HTTP proxy
-        networksetup -setwebproxy "$SERVICE" "$PROXY_IP" "$PROXY_PORT"
-
+        run_sudo networksetup -setwebproxy "$SERVICE" "$PROXY_IP" "$PROXY_PORT" || rc=1
         # Set HTTPS proxy
-        networksetup -setsecurewebproxy "$SERVICE" "$PROXY_IP" "$PROXY_PORT"
-
+        run_sudo networksetup -setsecurewebproxy "$SERVICE" "$PROXY_IP" "$PROXY_PORT" || rc=1
         # Set SOCKS proxy
-        networksetup -setsocksfirewallproxy "$SERVICE" "$PROXY_IP" "$PROXY_PORT"
-
+        run_sudo networksetup -setsocksfirewallproxy "$SERVICE" "$PROXY_IP" "$PROXY_PORT" || rc=1
         # Set bypass domains
-        networksetup -setproxybypassdomains "$SERVICE" "${BYPASS_DOMAINS[@]}"
+        run_sudo networksetup -setproxybypassdomains "$SERVICE" "${BYPASS_DOMAINS[@]}" || rc=1
         echo "Proxy for network service '$SERVICE' has been set to $PROXY_IP:$PROXY_PORT"
-    done
+    done <<< "$SERVICES"
+
+    if [ $rc -ne 0 ]; then
+        echo "Error: one or more networksetup commands failed." >&2
+        exit 1
+    fi
     echo "Proxy settings for all network services are complete!"
 }
 
 # Function to disable proxy
 clear_proxy() {
     # Get all network service names
-    SERVICES=$(networksetup -listallnetworkservices | grep -v '*')
+    SERVICES=$(get_services)
+    if [ -z "$SERVICES" ]; then
+        echo "Error: no network services found." >&2
+        exit 1
+    fi
 
+    local rc=0
     # Loop through each network service
-    echo "$SERVICES" | while read -r SERVICE; do
+    while IFS= read -r SERVICE; do
+        [ -z "$SERVICE" ] && continue
         echo "Disabling proxy and clearing bypass domains for network service '$SERVICE'..."
         # Disable HTTP proxy
-        networksetup -setwebproxystate "$SERVICE" off
-
+        run_sudo networksetup -setwebproxystate "$SERVICE" off || rc=1
         # Disable HTTPS proxy
-        networksetup -setsecurewebproxystate "$SERVICE" off
-
+        run_sudo networksetup -setsecurewebproxystate "$SERVICE" off || rc=1
         # Disable SOCKS proxy
-        networksetup -setsocksfirewallproxystate "$SERVICE" off
-
+        run_sudo networksetup -setsocksfirewallproxystate "$SERVICE" off || rc=1
         echo "Proxy for network service '$SERVICE' has been disabled"
-    done
+    done <<< "$SERVICES"
+
+    if [ $rc -ne 0 ]; then
+        echo "Error: one or more networksetup commands failed." >&2
+        exit 1
+    fi
     echo "Proxy for all network services has been disabled!"
 }
 

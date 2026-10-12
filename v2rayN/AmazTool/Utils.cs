@@ -24,8 +24,8 @@ internal class Utils
         return Path.Combine(startupPath, fileName);
     }
 
-    // Process/executable name of the main app (matches the v2rayN.exe assembly name).
-    public static string V2rayN => "v2rayN";
+    // Process/executable name of the main app (matches the zhenhanvn.exe assembly name).
+    public static string V2rayN => "zhenhanvn";
 
     public static void StartV2RayN()
     {
