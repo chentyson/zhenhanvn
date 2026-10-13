@@ -1148,6 +1148,24 @@ public class Utils
         }
     }
 
+    public static string GetUpdatePath(string filename = "")
+    {
+        var updatePath = Path.Combine(StartupPath(), "update");
+        if (!Directory.Exists(updatePath))
+        {
+            Directory.CreateDirectory(updatePath);
+        }
+
+        if (filename.IsNullOrEmpty())
+        {
+            return updatePath;
+        }
+        else
+        {
+            return Path.Combine(updatePath, filename);
+        }
+    }
+
     public static string GetBackupPath(string filename)
     {
         var tempPath = Path.Combine(StartupPath(), "guiBackups");

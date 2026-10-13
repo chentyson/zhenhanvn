@@ -142,7 +142,7 @@ public partial class MainWindow
              .DisposeWith(disposables);
         });
 
-        Title = $"震撼外网-V3.0 - {(Utils.IsAdministrator() ? ResUI.RunAsAdmin : ResUI.NotRunAsAdmin)}";
+        Title = $"震撼外网v3-{Utils.GetVersionInfo()}";
         if (_config.UiItem.AutoHideStartup)
         {
             WindowState = WindowState.Minimized;

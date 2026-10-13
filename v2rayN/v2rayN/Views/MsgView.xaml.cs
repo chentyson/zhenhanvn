@@ -30,6 +30,8 @@ public partial class MsgView
         menuMsgViewCopy.Click += menuMsgViewCopy_Click;
         menuMsgViewCopyAll.Click += menuMsgViewCopyAll_Click;
         menuMsgViewClear.Click += menuMsgViewClear_Click;
+        btnTroubleshoot.Click += btnTroubleshoot_Click;
+        btnRestoreDefault.Click += btnRestoreDefault_Click;
 
         cmbMsgFilter.ItemsSource = Global.PresetMsgFilters;
     }
@@ -75,5 +77,30 @@ public partial class MsgView
     private void menuMsgViewClear_Click(object sender, System.Windows.RoutedEventArgs e)
     {
         ClearMsg();
+    }
+
+    private void btnTroubleshoot_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        var config = AppManager.Instance.Config;
+        config.CoreBasicItem.Loglevel = "debug";
+        config.SystemProxyItem.SysProxyType = ESysProxyType.ForcedClear;
+        config.TunModeItem.EnableTun = false;
+        StatusBarViewModel.Instance.SystemProxySelected = (int)ESysProxyType.ForcedClear;
+        StatusBarViewModel.Instance.EnableTun = false;
+        ClearMsg();
+        _ = ConfigHandler.SaveConfig(config);
+        StatusBarViewModel.Instance.ReloadRequested.Publish();
+    }
+
+    private void btnRestoreDefault_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        var config = AppManager.Instance.Config;
+        config.CoreBasicItem.Loglevel = "warning";
+        config.SystemProxyItem.SysProxyType = ESysProxyType.ForcedChange;
+        config.TunModeItem.EnableTun = false;
+        StatusBarViewModel.Instance.SystemProxySelected = (int)ESysProxyType.ForcedChange;
+        StatusBarViewModel.Instance.EnableTun = false;
+        _ = ConfigHandler.SaveConfig(config);
+        StatusBarViewModel.Instance.ReloadRequested.Publish();
     }
 }

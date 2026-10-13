@@ -245,6 +245,10 @@ public class CheckUpdateItem
     public bool CheckPreReleaseUpdate { get; set; }
     public bool UpdateViaProxy { get; set; } = true;
     public List<string>? SelectedCoreTypes { get; set; }
+    public bool AutoDownloadUpdate { get; set; }
+    public string? PendingUpdateVersion { get; set; }
+    public string? PendingUpdateZipPath { get; set; }
+    public long PendingUpdateDownloadedAt { get; set; }
 }
 
 [Serializable]

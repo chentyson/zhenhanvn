@@ -137,6 +137,52 @@ public partial class UpdateService(Config config, Func<bool, string, Task> updat
         return msgs;
     }
 
+    /// <summary>
+    /// Check for a new GUI version and download it to the stable update path.
+    /// Returns the new version string if download succeeded, null otherwise.
+    /// </summary>
+    public async Task<string?> DownloadGuiUpdate(bool preRelease, bool blProxy = true)
+    {
+        try
+        {
+            var downloadHandle = new DownloadService();
+            var checkPreRelease = CoreInfoManager.Instance.GetCheckPreRelease(ECoreType.zhenhanvn, preRelease);
+            var result = await CheckUpdateAsync(downloadHandle, ECoreType.zhenhanvn, checkPreRelease, blProxy);
+
+            if (!result.Success || result.Version is null || result.Url is null)
+            {
+                return null;
+            }
+
+            // Download to the stable update path
+            var fileName = $"v2rayN_{result.Version}.zip";
+            var filePath = Utils.GetUpdatePath(fileName);
+
+            // Clean up any previous download
+            foreach (var oldFile in Directory.GetFiles(Utils.GetUpdatePath(), "*.zip"))
+            {
+                try { File.Delete(oldFile); } catch { }
+            }
+
+            await downloadHandle.DownloadFileAsync(
+                new() { FileUrl = result.Url, FilePath = filePath },
+                blProxy,
+                TimeSpan.FromSeconds(300)); // 5 min timeout for large GUI zip
+
+            if (File.Exists(filePath))
+            {
+                return result.Version.ToString();
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog(_tag, ex);
+            return null;
+        }
+    }
+
     public async Task UpdateGeoFileAll(bool blProxy = true)
     {
         var requests = new List<FileDownloadRequest>();

@@ -134,7 +134,7 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
 
         if (Utils.IsWindows())
         {
-            Title = $"震撼外网-V3.0 - {(Utils.IsAdministrator() ? ResUI.RunAsAdmin : ResUI.NotRunAsAdmin)}";
+            Title = $"震撼外网v3-{Utils.GetVersionInfo()}";
 
             if (!Design.IsDesignMode)
             {
@@ -144,7 +144,7 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         }
         else
         {
-            Title = "震撼外网-V3.0";
+            Title = $"震撼外网v3-{Utils.GetVersionInfo()}";
             menuAddServerViaScan.IsVisible = false;
         }
 
