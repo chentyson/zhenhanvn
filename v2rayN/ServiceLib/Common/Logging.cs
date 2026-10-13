@@ -38,6 +38,16 @@ public class Logging
         _logger1.Info(strContent);
     }
 
+    public static void SaveLogError(string strContent)
+    {
+        if (!LogManager.IsLoggingEnabled())
+        {
+            return;
+        }
+
+        _logger1.Error(strContent);
+    }
+
     public static void SaveLog(string strTitle, Exception ex)
     {
         if (!LogManager.IsLoggingEnabled())

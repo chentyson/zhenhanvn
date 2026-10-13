@@ -118,7 +118,7 @@ public class ProcessService : IDisposable
 
     private void RegisterEventHandlers()
     {
-        void dataHandler(object sender, DataReceivedEventArgs e)
+        void outputHandler(object sender, DataReceivedEventArgs e)
         {
             if (e.Data.IsNotEmpty())
             {
@@ -126,15 +126,24 @@ public class ProcessService : IDisposable
             }
         }
 
-        _process.OutputDataReceived += dataHandler;
-        _process.ErrorDataReceived += dataHandler;
+        void errorHandler(object sender, DataReceivedEventArgs e)
+        {
+            if (e.Data.IsNotEmpty())
+            {
+                Logging.SaveLogError(e.Data);
+                _ = _updateFunc?.Invoke(true, e.Data + Environment.NewLine);
+            }
+        }
+
+        _process.OutputDataReceived += outputHandler;
+        _process.ErrorDataReceived += errorHandler;
 
         _process.Exited += (s, e) =>
         {
             try
             {
-                _process.OutputDataReceived -= dataHandler;
-                _process.ErrorDataReceived -= dataHandler;
+                _process.OutputDataReceived -= outputHandler;
+                _process.ErrorDataReceived -= errorHandler;
             }
             catch
             {
