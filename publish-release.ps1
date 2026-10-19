@@ -1,4 +1,4 @@
-# Build and publish a zhenhanvn GitHub release (Windows x64 + macOS x64/arm64).
+﻿# Build and publish a zhenhanvn GitHub release (Windows x64 + macOS x64/arm64).
 #
 # What it does:
 #   1. Reads the version from v2rayN\Directory.Build.props (bump it manually first).
@@ -122,7 +122,12 @@ foreach ($asset in $assets) {
 # --- Commit, tag and push (before creating the release so the tag exists) ---
 if (-not $NoPush) {
     Push-Location $ProjectRoot
+    $gitErrorActionPreference = $ErrorActionPreference
     try {
+        # git writes informational lines to stderr; with ErrorActionPreference=Stop
+        # Windows PowerShell would treat those as terminating errors and report a
+        # bogus "push failed" even when the push succeeded.
+        $ErrorActionPreference = "Continue"
         $pushUrl = "https://x-access-token:$Token@github.com/$Repo.git"
         git add -u
         git add package-osx-zhenhanvn.py package-osx-zhenhanvn.sh publish.ps1 publish-github.ps1 publish-release.ps1 v2rayN/v2rayN/EmbeddedCoreExtractor.cs
@@ -135,14 +140,18 @@ if (-not $NoPush) {
             Write-Host "No source changes to commit (artifacts only)" -ForegroundColor Cyan
         }
         git tag -f $tag | Out-Null
+
         git push "$pushUrl" main 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "git push main failed (exit $LASTEXITCODE)" }
         git push "$pushUrl" $tag --force 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "git push tag failed (exit $LASTEXITCODE)" }
         Write-Host "Pushed main + tag $tag" -ForegroundColor Green
     }
     catch {
         Write-Host "Git push step failed (release will still be created): $($_.Exception.Message)" -ForegroundColor Yellow
     }
     finally {
+        $ErrorActionPreference = $gitErrorActionPreference
         Pop-Location
     }
 }
