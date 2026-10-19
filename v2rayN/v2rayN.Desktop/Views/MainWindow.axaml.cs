@@ -113,6 +113,12 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
                 interaction.SetOutput(RxVoid.Default);
             }).DisposeWith(disposables);
 
+            ViewModel.ShowYesNoInteraction.RegisterHandler(async interaction =>
+            {
+                var result = await UI.ShowYesNo(interaction.Input);
+                interaction.SetOutput(result == ButtonResult.Yes);
+            }).DisposeWith(disposables);
+
             AppEvents.SendSnackMsgRequested
               .AsObservable()
               .ObserveOn(RxSchedulers.MainThreadScheduler)

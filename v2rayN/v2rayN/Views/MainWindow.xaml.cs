@@ -123,6 +123,12 @@ public partial class MainWindow
                 interaction.SetOutput(RxVoid.Default);
             }).DisposeWith(disposables);
 
+            ViewModel.ShowYesNoInteraction.RegisterHandler(interaction =>
+            {
+                var result = UI.ShowYesNo(interaction.Input);
+                interaction.SetOutput(result == MessageBoxResult.Yes);
+            }).DisposeWith(disposables);
+
             AppEvents.SendSnackMsgRequested
               .AsObservable()
               .ObserveOn(RxSchedulers.MainThreadScheduler)

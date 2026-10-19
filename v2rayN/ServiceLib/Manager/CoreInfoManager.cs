@@ -72,6 +72,12 @@ public sealed class CoreInfoManager
         return lst;
     }
 
+    public bool IsCoreTypeSelectedByDefault(ECoreType type)
+    {
+        // mihomo and sing_box are off by default on the Check Update page.
+        return type is not (ECoreType.mihomo or ECoreType.sing_box);
+    }
+
     public bool IsCheckUpdateSupported(ECoreType type)
     {
         return type switch
@@ -108,14 +114,14 @@ public sealed class CoreInfoManager
                     CoreType = ECoreType.zhenhanvn,
                     Url = GetCoreUrl(ECoreType.zhenhanvn),
                     ReleaseApiUrl = urlN.Replace(Global.GithubUrl, Global.GithubApiUrl),
-                    DownloadUrlWin64 = urlN + "/download/{0}/v2rayN-windows-64.zip",
-                    DownloadUrlWinArm64 = urlN + "/download/{0}/v2rayN-windows-arm64.zip",
-                    DownloadUrlLinux64 = urlN + "/download/{0}/v2rayN-linux-64.zip",
-                    DownloadUrlLinuxArm64 = urlN + "/download/{0}/v2rayN-linux-arm64.zip",
-                    DownloadUrlLinuxRiscV64 = urlN + "/download/{0}/v2rayN-linux-riscv64.zip",
-                    DownloadUrlLinuxLoong64 = urlN + "/download/{0}/v2rayN-linux-loong64.zip",
-                    DownloadUrlOSX64 = urlN + "/download/{0}/v2rayN-macos-64.zip",
-                    DownloadUrlOSXArm64 = urlN + "/download/{0}/v2rayN-macos-arm64.zip",
+                    DownloadUrlWin64 = urlN + "/download/{0}/zhenhanvn-windows-64.zip",
+                    DownloadUrlWinArm64 = urlN + "/download/{0}/zhenhanvn-windows-arm64.zip",
+                    DownloadUrlLinux64 = urlN + "/download/{0}/zhenhanvn-linux-64.zip",
+                    DownloadUrlLinuxArm64 = urlN + "/download/{0}/zhenhanvn-linux-arm64.zip",
+                    DownloadUrlLinuxRiscV64 = urlN + "/download/{0}/zhenhanvn-linux-riscv64.zip",
+                    DownloadUrlLinuxLoong64 = urlN + "/download/{0}/zhenhanvn-linux-loong64.zip",
+                    DownloadUrlOSX64 = urlN + "/download/{0}/zhenhanvn-macos-64.zip",
+                    DownloadUrlOSXArm64 = urlN + "/download/{0}/zhenhanvn-macos-arm64.zip",
                 },
 
                 new CoreInfo

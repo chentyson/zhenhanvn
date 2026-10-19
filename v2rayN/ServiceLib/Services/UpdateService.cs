@@ -38,7 +38,7 @@ public partial class UpdateService(Config config, Func<bool, string, Task> updat
             await UpdateFunc(false, result.Msg);
 
             url = result.Url!;
-            fileName = Utils.GetTempPath(Utils.GetGuid());
+            fileName = Utils.GetTempPath($"v2rayN_{result.Version}.zip");
             await downloadHandle.DownloadFileAsync(new() { FileUrl = url, FilePath = fileName }, blProxy, TimeSpan.FromSeconds(_timeout));
         }
         else
@@ -117,7 +117,8 @@ public partial class UpdateService(Config config, Func<bool, string, Task> updat
         var msgs = new List<string>();
         foreach (var type in CoreInfoManager.Instance.GetCheckUpdateCoreTypes())
         {
-            if (!(_config.CheckUpdateItem.SelectedCoreTypes?.Contains(type.ToString()) ?? true))
+            if (!(_config.CheckUpdateItem.SelectedCoreTypes?.Contains(type.ToString())
+                ?? CoreInfoManager.Instance.IsCoreTypeSelectedByDefault(type)))
             {
                 continue;
             }
@@ -139,9 +140,10 @@ public partial class UpdateService(Config config, Func<bool, string, Task> updat
 
     /// <summary>
     /// Check for a new GUI version and download it to the stable update path.
+    /// Reports download progress (every 10%) through the provided updateFunc.
     /// Returns the new version string if download succeeded, null otherwise.
     /// </summary>
-    public async Task<string?> DownloadGuiUpdate(bool preRelease, bool blProxy = true)
+    public async Task<string?> DownloadGuiUpdate(bool preRelease, bool blProxy = true, Func<bool, string, Task>? updateFunc = null)
     {
         try
         {
@@ -158,11 +160,58 @@ public partial class UpdateService(Config config, Func<bool, string, Task> updat
             var fileName = $"v2rayN_{result.Version}.zip";
             var filePath = Utils.GetUpdatePath(fileName);
 
+            // Skip download if this version's zip already exists
+            if (File.Exists(filePath))
+            {
+                Logging.SaveLog($"{_tag}: v{result.Version} already downloaded, skipping.");
+                return result.Version.ToString();
+            }
+
             // Clean up any previous download
             foreach (var oldFile in Directory.GetFiles(Utils.GetUpdatePath(), "*.zip"))
             {
                 try { File.Delete(oldFile); } catch { }
             }
+
+            // Report download start
+            await updateFunc?.Invoke(false, string.Format(ResUI.MsgUpdateDownloadStart, result.Version));
+
+            // Track progress: report every 10%
+            var lastReportedPercent = -1;
+            downloadHandle.UpdateCompleted += (sender, args) =>
+            {
+                if (args.Success)
+                {
+                    _ = updateFunc?.Invoke(false, string.Format(ResUI.MsgUpdateDownloadComplete, result.Version));
+                    return;
+                }
+
+                // Parse "speed/s | downloaded/total" from args.Msg
+                var msg = args.Msg;
+                if (msg != null && msg.Contains("|"))
+                {
+                    var parts = msg.Split('|');
+                    if (parts.Length >= 2)
+                    {
+                        var sizePart = parts[1].Trim();
+                        var sizeParts = sizePart.Split('/');
+                        if (sizeParts.Length >= 2)
+                        {
+                            if (TryParseHumanSize(sizeParts[0], out var downloaded) &&
+                                TryParseHumanSize(sizeParts[1], out var total) &&
+                                total > 0)
+                            {
+                                var percent = (int)(downloaded * 100 / total);
+                                if (percent >= 0 && percent <= 100 && percent / 10 > lastReportedPercent / 10)
+                                {
+                                    lastReportedPercent = percent;
+                                    _ = updateFunc?.Invoke(false, string.Format(ResUI.MsgUpdateDownloadProgress, result.Version, percent));
+                                }
+                            }
+                        }
+                    }
+                }
+            };
 
             await downloadHandle.DownloadFileAsync(
                 new() { FileUrl = result.Url, FilePath = filePath },
@@ -181,6 +230,41 @@ public partial class UpdateService(Config config, Func<bool, string, Task> updat
             Logging.SaveLog(_tag, ex);
             return null;
         }
+    }
+
+    private static bool TryParseHumanSize(string input, out long bytes)
+    {
+        bytes = 0;
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return false;
+        }
+
+        input = input.Trim();
+        var multiplier = 1L;
+        if (input.EndsWith("GB", StringComparison.OrdinalIgnoreCase))
+        {
+            multiplier = 1024 * 1024 * 1024;
+            input = input[..^2].Trim();
+        }
+        else if (input.EndsWith("MB", StringComparison.OrdinalIgnoreCase))
+        {
+            multiplier = 1024 * 1024;
+            input = input[..^2].Trim();
+        }
+        else if (input.EndsWith("KB", StringComparison.OrdinalIgnoreCase))
+        {
+            multiplier = 1024;
+            input = input[..^2].Trim();
+        }
+
+        if (double.TryParse(input, out var value))
+        {
+            bytes = (long)(value * multiplier);
+            return true;
+        }
+
+        return false;
     }
 
     public async Task UpdateGeoFileAll(bool blProxy = true)
@@ -372,17 +456,6 @@ public partial class UpdateService(Config config, Func<bool, string, Task> updat
                 Architecture.X64 => coreInfo?.DownloadUrlWin64,
                 _ => null,
             };
-
-            if (coreInfo?.CoreType != ECoreType.zhenhanvn)
-            {
-                return url;
-            }
-
-            //Check for avalonia desktop windows version
-            if (File.Exists(Path.Combine(Utils.GetBaseDirectory(), "libHarfBuzzSharp.dll")))
-            {
-                return url?.Replace(".zip", "-desktop.zip");
-            }
 
             return url;
         }

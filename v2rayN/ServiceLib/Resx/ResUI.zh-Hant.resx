@@ -1764,6 +1764,27 @@
   <data name="MsgCheckUpdateHasNewVersion" xml:space="preserve">
     <value>{0} 有新版本可用：{1}</value>
   </data>
+  <data name="MsgPendingUpdatePrompt" xml:space="preserve">
+    <value>發現已準備就緒新版本 {0}，是否切換使用？確認後請重新啟動軟體。</value>
+  </data>
+  <data name="MsgUpdateNowPrompt" xml:space="preserve">
+    <value>發現新版本 {0}，是否立即更新？確認後請重新啟動軟體。</value>
+  </data>
+  <data name="MsgUpdateReadyRestart" xml:space="preserve">
+    <value>新版本已就緒，請重新啟動軟體以使用。</value>
+  </data>
+  <data name="MsgUpdateDownloadedReady" xml:space="preserve">
+    <value>版本 {0} 已下載完成，將在下次重啟時安裝。</value>
+  </data>
+  <data name="MsgUpdateDownloadStart" xml:space="preserve">
+    <value>正在下載新版本 {0}...</value>
+  </data>
+  <data name="MsgUpdateDownloadProgress" xml:space="preserve">
+    <value>正在下載版本 {0}：{1}%</value>
+  </data>
+  <data name="MsgUpdateDownloadComplete" xml:space="preserve">
+    <value>版本 {0} 下載完成。</value>
+  </data>
   <data name="menuCheckOnly" xml:space="preserve">
     <value>僅檢查</value>
   </data>

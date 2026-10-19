@@ -12,6 +12,8 @@
 		<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<CETCompat>false</CETCompat>
+		<!-- Keep only English satellite resources; no cs/de/es/fa/... folders. -->
+		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -40,6 +42,14 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\ServiceLib\ServiceLib.csproj" />
+	</ItemGroup>
+
+	<!-- Embedded xray core so the published single-file exe is self-contained. -->
+	<ItemGroup Condition="'$(EmbedXrayCore)' == 'true'">
+		<EmbeddedResource Include="EmbeddedCore\xray.exe" LogicalName="core.xray.exe" />
+		<EmbeddedResource Include="EmbeddedCore\wintun.dll" LogicalName="core.wintun.dll" />
+		<EmbeddedResource Include="EmbeddedCore\geoip.dat" LogicalName="core.geoip.dat" />
+		<EmbeddedResource Include="EmbeddedCore\geosite.dat" LogicalName="core.geosite.dat" />
 	</ItemGroup>
 
 </Project>

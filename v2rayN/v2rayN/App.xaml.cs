@@ -23,6 +23,9 @@ public partial class App
     /// <param name="e"></param>
     protected override void OnStartup(StartupEventArgs e)
     {
+        // Extract the embedded xray core (if any) before the app initializes.
+        EmbeddedCoreExtractor.ExtractIfMissing();
+
         var exePathKey = Utils.GetMd5(Utils.GetExePath());
 
         var rebootas = e.Args.Any(t => t == Global.RebootAs);

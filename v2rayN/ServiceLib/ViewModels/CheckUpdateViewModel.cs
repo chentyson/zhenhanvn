@@ -1,5 +1,3 @@
-using System.IO.Compression;
-
 namespace ServiceLib.ViewModels;
 
 public partial class CheckUpdateViewModel : MyReactiveObject
@@ -78,7 +76,8 @@ public partial class CheckUpdateViewModel : MyReactiveObject
         AppManager.Instance.LastCheckUpdateResults.TryGetValue(coreType, out var lastResult);
         return new()
         {
-            IsSelected = _config.CheckUpdateItem.SelectedCoreTypes?.Contains(coreType.ToString()) ?? true,
+            IsSelected = _config.CheckUpdateItem.SelectedCoreTypes?.Contains(coreType.ToString())
+                ?? CoreInfoManager.Instance.IsCoreTypeSelectedByDefault(coreType),
             CoreType = coreType,
             IsGeoFile = false,
             Remarks = lastResult ?? ResUI.menuCheckUpdate,
@@ -254,17 +253,33 @@ public partial class CheckUpdateViewModel : MyReactiveObject
 
     private async Task CheckUpdateN(bool preRelease)
     {
-        async Task _updateUI(bool success, string msg)
+        await UpdateView(_v2rayN, string.Format(ResUI.MsgStartUpdating, _v2rayN));
+
+        var updateService = new UpdateService(_config, async (success, msg) => await Task.CompletedTask);
+        var newVersion = await updateService.DownloadGuiUpdate(preRelease, EnableUpdateViaProxy, async (success, msg) =>
         {
             await UpdateView(_v2rayN, msg);
-            if (success)
-            {
-                await UpdateView(_v2rayN, ResUI.OperationSuccess);
-                UpdatedPlusPlus(_v2rayN, msg);
-            }
+        });
+
+        if (newVersion != null)
+        {
+            var zipPath = Utils.GetUpdatePath($"v2rayN_{newVersion}.zip");
+            _config.CheckUpdateItem.PendingUpdateVersion = newVersion;
+            _config.CheckUpdateItem.PendingUpdateZipPath = zipPath;
+            _config.CheckUpdateItem.PendingUpdateDownloadedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            await ConfigHandler.SaveConfig(_config);
+
+            await UpdateView(_v2rayN, string.Format(ResUI.MsgUpdateDownloadedReady, newVersion));
+            UpdatedPlusPlus(_v2rayN, "");
+
+            // Ask the user to update immediately now that the new version has been downloaded.
+            AppEvents.UpdateNowRequested.Publish(newVersion);
         }
-        await new UpdateService(_config, _updateUI).CheckUpdateGuiN(preRelease, EnableUpdateViaProxy)
-            .ContinueWith(t => UpdatedPlusPlus(_v2rayN, ""));
+        else
+        {
+            await UpdateView(_v2rayN, string.Format(ResUI.IsLatestN, _v2rayN, new SemanticVersion(Utils.GetVersionInfo()).ToStandardVersionString("v")));
+            UpdatedPlusPlus(_v2rayN, "");
+        }
     }
 
     private async Task CheckUpdateCore(CheckUpdateModel model, bool preRelease)
@@ -290,8 +305,9 @@ public partial class CheckUpdateViewModel : MyReactiveObject
     {
         if (_lstUpdated.Count > 0 && _lstUpdated.Count(x => x.IsFinished == true) == _lstUpdated.Count)
         {
-            await UpdateFinishedSub(false);
-            await Task.Delay(2000);
+            // Properly await core stop to release file locks before extraction
+            await CoreManager.Instance.CoreStop();
+            await Task.Delay(500);
             await UpgradeCore();
 
             if (_lstUpdated.Any(x => x.CoreType == _v2rayN && x.IsFinished == true))
@@ -327,74 +343,9 @@ public partial class CheckUpdateViewModel : MyReactiveObject
 
     private async Task UpgradeN()
     {
-        try
-        {
-            var fileName = _lstUpdated.FirstOrDefault(x => x.CoreType == _v2rayN)?.FileName;
-            if (fileName.IsNullOrEmpty())
-            {
-                return;
-            }
-            if (!Utils.UpgradeAppExists(out var upgradeFileName))
-            {
-                // The running install may predate the bundled upgrade tool (e.g. a
-                // single-file build without AmazTool.exe). Extract it from the
-                // downloaded release zip so a first-time upgrade can still proceed.
-                if (!TryExtractUpgradeApp(fileName) || !Utils.UpgradeAppExists(out upgradeFileName))
-                {
-                    await UpdateView(_v2rayN, ResUI.UpgradeAppNotExistTip);
-                    NoticeManager.Instance.SendMessageAndEnqueue(ResUI.UpgradeAppNotExistTip);
-                    Logging.SaveLog("UpgradeApp does not exist");
-                    return;
-                }
-            }
-
-            var id = ProcUtils.ProcessStart(upgradeFileName, fileName, Utils.StartupPath());
-            if (id > 0)
-            {
-                await AppManager.Instance.AppExitAsync(true);
-            }
-        }
-        catch (Exception ex)
-        {
-            await UpdateView(_v2rayN, ex.Message);
-        }
-    }
-
-    /// <summary>
-    /// Extract AmazTool.exe from the downloaded release zip into the running
-    /// directory when it is not already present, so a first-time upgrade (from an
-    /// install that lacks the upgrade tool) can still be performed.
-    /// </summary>
-    private static bool TryExtractUpgradeApp(string encodedZipFileName)
-    {
-        var upgradeFileName = Path.Combine(Utils.GetBaseDirectory(), Utils.GetExeName("AmazTool"));
-        try
-        {
-            var zipFileName = Utils.UrlDecode(encodedZipFileName);
-            if (zipFileName.IsNullOrEmpty() || !File.Exists(zipFileName))
-            {
-                return false;
-            }
-
-            var exeName = Utils.GetExeName("AmazTool");
-            using var archive = ZipFile.OpenRead(zipFileName);
-            // Match the AmazTool.exe entry regardless of the top-level folder name.
-            var entry = archive.Entries.FirstOrDefault(e =>
-                string.Equals(Path.GetFileName(e.FullName), exeName, StringComparison.OrdinalIgnoreCase));
-            if (entry is null)
-            {
-                return false;
-            }
-
-            Directory.CreateDirectory(Path.GetDirectoryName(upgradeFileName)!);
-            entry.ExtractToFile(upgradeFileName, true);
-            return File.Exists(upgradeFileName);
-        }
-        catch (Exception ex)
-        {
-            Logging.SaveLog("TryExtractUpgradeApp", ex);
-            return false;
-        }
+        // The GUI update is downloaded to the update/ directory and applied on next startup.
+        // No in-process apply is needed here.
+        await Task.CompletedTask;
     }
 
     private async Task UpgradeCore()

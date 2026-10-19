@@ -405,3 +405,7 @@ FodyWeavers.xsd
 
 # Local release artifacts (build outputs, not source)
 zhenhanvn-macos-*.zip
+zhenhanvn-windows-64.zip
+
+# Local GitHub token for publish-github.ps1 (never commit)
+.github-token

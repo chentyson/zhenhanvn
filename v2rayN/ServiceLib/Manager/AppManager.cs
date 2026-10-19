@@ -92,6 +92,10 @@ public sealed class AppManager
 #pragma warning disable CS0618
         SQLiteHelper.Instance.CreateTable<ProfileGroupItem>();
 #pragma warning restore CS0618
+
+        // Clean up leftover .last files from a previous update
+        PendingUpdateHandler.CleanupOldFiles(Utils.StartupPath());
+
         return true;
     }
 

@@ -1779,6 +1779,27 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
   <data name="MsgCheckUpdateHasNewVersion" xml:space="preserve">
     <value>{0} has a new version available: {1}</value>
   </data>
+  <data name="MsgPendingUpdatePrompt" xml:space="preserve">
+    <value>A new version {0} is ready. Do you want to switch to it? Please restart the software after confirming.</value>
+  </data>
+  <data name="MsgUpdateNowPrompt" xml:space="preserve">
+    <value>A new version {0} is available. Do you want to update now? Please restart the software after confirming.</value>
+  </data>
+  <data name="MsgUpdateReadyRestart" xml:space="preserve">
+    <value>The new version is ready. Please restart the software to use it.</value>
+  </data>
+  <data name="MsgUpdateDownloadedReady" xml:space="preserve">
+    <value>Version {0} has been downloaded. It will be installed on next restart.</value>
+  </data>
+  <data name="MsgUpdateDownloadStart" xml:space="preserve">
+    <value>Downloading new version {0}...</value>
+  </data>
+  <data name="MsgUpdateDownloadProgress" xml:space="preserve">
+    <value>Downloading version {0}: {1}%</value>
+  </data>
+  <data name="MsgUpdateDownloadComplete" xml:space="preserve">
+    <value>Version {0} download complete.</value>
+  </data>
   <data name="menuCheckOnly" xml:space="preserve">
     <value>Only Check</value>
   </data>

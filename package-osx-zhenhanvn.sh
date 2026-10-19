@@ -12,6 +12,8 @@ Version="$3"
 
 AppDir="zhenhanvn.app"
 WorkDir="zhenhanvn-pkg-${Arch}"
+# CFBundleShortVersionString must be 3 parts; CFBundleVersion may be the full 4-part version.
+ShortVersion=$(printf '%s' "$Version" | cut -d. -f1-3)
 rm -rf "$WorkDir"
 mkdir -p "$WorkDir"
 cd "$WorkDir"
@@ -39,6 +41,8 @@ cp -rf "v2rayN-${Arch}"/* "$AppDir/Contents/MacOS/" 2>/dev/null || true
 cp -f "$OutputPath/v2rayN.icns" "$AppDir/Contents/Resources/AppIcon.icns"
 echo "When this file exists, app will not store configs under this folder" > "$AppDir/Contents/MacOS/NotStoreConfigHere.txt"
 chmod +x "$AppDir/Contents/MacOS/zhenhanvn"
+# Zip tools on Windows do not store Unix modes; make sure the cores are executable.
+find "$AppDir/Contents/MacOS/bin" -type f -exec chmod +x {} \; 2>/dev/null || true
 
 # 3) Info.plist (display name = zhenhanvn)
 cat > "$AppDir/Contents/Info.plist" <<-EOF
@@ -73,13 +77,15 @@ cat > "$AppDir/Contents/Info.plist" <<-EOF
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
+  <string>${ShortVersion}</string>
+  <key>CFBundleVersion</key>
   <string>${Version}</string>
   <key>CSResourcesFileMapped</key>
   <true/>
   <key>NSHighResolutionCapable</key>
   <true/>
   <key>LSMinimumSystemVersion</key>
-  <string>10.15</string>
+  <string>13.6</string>
 </dict>
 </plist>
 EOF

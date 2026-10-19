@@ -39,11 +39,6 @@
                 ToolTip="{x:Static resx:ResUI.menuMsgViewCopyAll}">
                 <materialDesign:PackIcon VerticalAlignment="Center" Kind="ContentCopy" />
             </Button>
-            <TextBlock
-                Margin="{StaticResource MarginLeftRight8}"
-                VerticalAlignment="Center"
-                Style="{StaticResource ToolbarTextBlock}"
-                Text="复制日志" />
             <Button
                 x:Name="btnClear"
                 Width="24"
@@ -84,7 +79,8 @@
             <Button
                 x:Name="btnRestoreDefault"
                 Margin="{StaticResource MarginLeftRight8}"
-                Content="恢复默认"
+                Content="开始使用"
+                Background="#C8E6C9"
                 Style="{StaticResource DefButton}" />
         </WrapPanel>
         <TextBox

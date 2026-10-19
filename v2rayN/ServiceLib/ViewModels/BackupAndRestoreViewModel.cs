@@ -136,17 +136,7 @@ public partial class BackupAndRestoreViewModel : MyReactiveObject
             var toPath = Utils.GetConfigPath();
             FileUtils.ZipExtractToFile(fileName, toPath, "");
 
-            if (Utils.IsWindows())
-            {
-                ProcUtils.RebootAsAdmin(false);
-            }
-            else
-            {
-                if (Utils.UpgradeAppExists(out var upgradeFileName))
-                {
-                    _ = ProcUtils.ProcessStart(upgradeFileName, Global.RebootAs, Utils.StartupPath());
-                }
-            }
+            ProcUtils.RebootAsAdmin(false);
             AppManager.Instance.Shutdown(true);
         }
         else

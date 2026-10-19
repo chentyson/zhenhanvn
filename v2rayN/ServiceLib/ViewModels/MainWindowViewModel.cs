@@ -6,6 +6,9 @@ public partial class MainWindowViewModel : MyReactiveObject
     public Interaction<RxVoid, byte[]?> ScanScreenInteraction { get; } = new();
     public Interaction<RxVoid, string?> BrowseImageFileInteraction { get; } = new();
     public Interaction<bool?, RxVoid> ShowHideWindowInteraction { get; } = new();
+    public Interaction<string, bool> ShowYesNoInteraction { get; } = new();
+
+    public ReactiveCommand<RxVoid, RxVoid> ApplyPendingUpdateCmd { get; }
 
     public bool DesignMode { get; set; }
 
@@ -250,6 +253,14 @@ public partial class MainWindowViewModel : MyReactiveObject
             await ApplyRegionalPreset(EPresetType.Iran);
         });
 
+        ApplyPendingUpdateCmd = ReactiveCommand.CreateFromTask(async () =>
+        {
+            if (PendingUpdateHandler.TryApplyPendingUpdate())
+            {
+                NoticeManager.Instance.Enqueue(ResUI.MsgUpdateReadyRestart);
+            }
+        });
+
         #endregion WhenAnyValue && ReactiveCommand
 
         #region AppEvents
@@ -263,6 +274,11 @@ public partial class MainWindowViewModel : MyReactiveObject
             .AsObservable()
             .ObserveOn(RxSchedulers.MainThreadScheduler)
             .Subscribe(bl => BlNewUpdate = bl);
+
+        AppEvents.UpdateNowRequested
+            .AsObservable()
+            .ObserveOn(RxSchedulers.MainThreadScheduler)
+            .SubscribeAsync(async version => await PromptUpdateNow(version));
 
         #endregion AppEvents
 
@@ -340,6 +356,9 @@ public partial class MainWindowViewModel : MyReactiveObject
         await RefreshServersDispatcherAsync();
 
         await Reload();
+
+        // Check for a pending update at startup and prompt the user to update now.
+        await PromptUpdateNow(null);
     }
 
     #endregion Init
@@ -394,6 +413,42 @@ public partial class MainWindowViewModel : MyReactiveObject
         }
         AppEvents.DispatcherStatisticsRequested.Publish(update);
         await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Prompt the user to update immediately when a new version is available.
+    /// On confirmation, applies the pending update (releases locked files, extracts the
+    /// new version into the app directory) and then exits the application so the user
+    /// can restart into the new version.
+    /// </summary>
+    private async Task PromptUpdateNow(string? version)
+    {
+        if (DesignMode)
+        {
+            return;
+        }
+
+        if (!PendingUpdateHandler.HasPendingUpdate())
+        {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(version))
+        {
+            version = _config.CheckUpdateItem.PendingUpdateVersion;
+        }
+
+        var msg = string.Format(ResUI.MsgUpdateNowPrompt, version);
+        var confirmed = await ShowYesNoInteraction.HandleSafe(msg);
+        if (confirmed)
+        {
+            if (PendingUpdateHandler.TryApplyPendingUpdate())
+            {
+                NoticeManager.Instance.Enqueue(ResUI.MsgUpdateReadyRestart);
+                // Exit the application so the user can restart into the new version.
+                await AppManager.Instance.AppExitAsync(true);
+            }
+        }
     }
 
     #endregion Actions

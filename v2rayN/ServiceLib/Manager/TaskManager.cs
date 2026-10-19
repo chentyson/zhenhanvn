@@ -12,6 +12,19 @@ public class TaskManager
         _config = config;
         _updateFunc = updateFunc;
 
+        // Immediately check for a new main program version on startup
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await UpdateTaskRunCheckUpdate();
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog("StartupCheckUpdate", ex);
+            }
+        });
+
         _ = Task.Factory.StartNew(
             ScheduledTasks,
             CancellationToken.None,
@@ -74,8 +87,8 @@ public class TaskManager
                 }
             }
 
-            //Execute once 24 hour
-            if (numOfExecuted % 1440 == 1)
+            //Execute once 24 hour (skip first iteration — already done on startup)
+            if (numOfExecuted > 1 && numOfExecuted % 1440 == 0)
             {
                 try
                 {
@@ -138,18 +151,43 @@ public class TaskManager
     {
         Logging.SaveLog("Execute check update");
 
-        var updateService = new UpdateService(_config, async (success, msg) => await Task.CompletedTask);
-
-        var msgs = await updateService.CheckHasUpdateOnlyAll(_config.CheckUpdateItem.CheckPreReleaseUpdate, _config.CheckUpdateItem.UpdateViaProxy);
-        foreach (var msg in msgs)
+        // Auto-check and auto-download only the main program (zhenhanvn).
+        // Other components (Xray, mihomo, sing_box, GeoFiles) require manual "check update".
+        if (Utils.IsPackagedInstall())
         {
-            await _updateFunc?.Invoke(false, msg);
+            return;
         }
-        NoticeManager.Instance.Enqueue(string.Join("\n", msgs));
 
-        if (msgs.Count > 0)
+        try
         {
-            AppEvents.HasUpdateNotified.Publish(true);
+            Logging.SaveLog("AutoDownloadUpdate: checking for GUI update");
+            var updateService = new UpdateService(_config, _updateFunc);
+            var newVersion = await updateService.DownloadGuiUpdate(
+                _config.CheckUpdateItem.CheckPreReleaseUpdate,
+                _config.CheckUpdateItem.UpdateViaProxy,
+                _updateFunc);
+
+            if (newVersion != null)
+            {
+                var zipPath = Utils.GetUpdatePath($"v2rayN_{newVersion}.zip");
+                _config.CheckUpdateItem.PendingUpdateVersion = newVersion;
+                _config.CheckUpdateItem.PendingUpdateZipPath = zipPath;
+                _config.CheckUpdateItem.PendingUpdateDownloadedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                await ConfigHandler.SaveConfig(_config);
+                Logging.SaveLog($"AutoDownloadUpdate: downloaded v{newVersion} to {zipPath}");
+
+                // Notify user about the new version
+                var msg = string.Format(ResUI.MsgCheckUpdateHasNewVersion, ECoreType.zhenhanvn, newVersion);
+                NoticeManager.Instance.Enqueue(msg);
+                AppEvents.HasUpdateNotified.Publish(true);
+
+                // Ask the user to update immediately now that the new version has been downloaded.
+                AppEvents.UpdateNowRequested.Publish(newVersion);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("AutoDownloadUpdate", ex);
         }
     }
 }

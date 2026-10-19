@@ -853,12 +853,6 @@ public class Utils
 
     #region Miscellaneous
 
-    public static bool UpgradeAppExists(out string upgradeFileName)
-    {
-        upgradeFileName = Path.Combine(GetBaseDirectory(), GetExeName("AmazTool"));
-        return File.Exists(upgradeFileName);
-    }
-
     /// <summary>
     /// Get version
     /// </summary>
@@ -1112,12 +1106,57 @@ public class Utils
 
     public static string GetBaseDirectory(string fileName = "")
     {
-        return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
+        // For single-file (PublishSingleFile) apps, AppDomain.CurrentDomain.BaseDirectory
+        // is the temp extraction folder, not the executable's folder. Resolve the base
+        // directory from the executable path so config, core and logs live next to the
+        // exe (portable behavior). For normal builds this equals BaseDirectory.
+        var exeDir = Path.GetDirectoryName(GetExePath());
+        var baseDir = string.IsNullOrEmpty(exeDir) ? AppDomain.CurrentDomain.BaseDirectory : exeDir;
+        return Path.Combine(baseDir, fileName);
     }
 
     public static string GetExePath()
     {
         return Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
+    }
+
+    /// <summary>
+    /// When running from a macOS .app bundle, returns the path of the bundle
+    /// ({name}.app) that contains the current executable. Returns null for
+    /// non-macOS platforms or when the executable is not inside a bundle
+    /// (for example a development build).
+    /// </summary>
+    public static string? GetMacAppBundlePath()
+    {
+        if (!IsMacOS())
+        {
+            return null;
+        }
+
+        try
+        {
+            var exePath = GetExePath();
+            if (exePath.IsNullOrEmpty())
+            {
+                return null;
+            }
+
+            // {name}.app/Contents/MacOS/{exe}
+            var macOsDir = Path.GetDirectoryName(exePath);
+            var contentsDir = macOsDir.IsNullOrEmpty() ? null : Path.GetDirectoryName(macOsDir);
+            var bundleDir = contentsDir.IsNullOrEmpty() ? null : Path.GetDirectoryName(contentsDir);
+            if (bundleDir.IsNullOrEmpty())
+            {
+                return null;
+            }
+
+            return bundleDir.EndsWith(".app", StringComparison.OrdinalIgnoreCase) ? bundleDir : null;
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("GetMacAppBundlePath", ex);
+            return null;
+        }
     }
 
     public static string StartupPath()
