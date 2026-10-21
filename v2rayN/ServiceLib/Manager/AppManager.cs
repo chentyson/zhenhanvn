@@ -129,7 +129,7 @@ public sealed class AppManager
         {
             Logging.SaveLog("AppExitAsync Begin");
 
-            await SysProxyHandler.UpdateSysProxy(_config, true);
+            await SysProxyHandler.UpdateSysProxy(_config, true, allowPrompt: false);
             AppEvents.AppExitRequested.Publish();
             await Task.Delay(50); //Wait for AppExitRequested to be processed
 

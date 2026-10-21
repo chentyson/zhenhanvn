@@ -4,7 +4,7 @@ public static class SysProxyHandler
 {
     private static readonly string _tag = "SysProxyHandler";
 
-    public static async Task<bool> UpdateSysProxy(Config config, bool forceDisable)
+    public static async Task<bool> UpdateSysProxy(Config config, bool forceDisable, bool allowPrompt = true)
     {
         var type = config.SystemProxyItem.SysProxyType;
 
@@ -46,7 +46,7 @@ public static class SysProxyHandler
                     break;
 
                 case ESysProxyType.ForcedClear when Utils.IsMacOS():
-                    await ProxySettingOSX.UnsetProxy();
+                    await ProxySettingOSX.UnsetProxy(allowPrompt);
                     break;
 
                 case ESysProxyType.Pac when Utils.IsWindows():

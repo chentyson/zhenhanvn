@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 using SkiaSharp;
 
 namespace v2rayN.Desktop.Common;
@@ -7,19 +8,54 @@ public partial class QRCodeAvaloniaUtils
 {
     public static byte[]? CaptureScreen()
     {
-        if (!Utils.IsWindows())
-        {
-            return null;
-        }
-
         try
         {
-            return CaptureScreenWindows();
+            if (Utils.IsWindows())
+            {
+                return CaptureScreenWindows();
+            }
+
+            if (OperatingSystem.IsMacOS())
+            {
+                return CaptureScreenMacOS();
+            }
+
+            return null;
         }
         catch (Exception ex)
         {
             Logging.SaveLog("CaptureScreen", ex);
             return null;
+        }
+    }
+
+    [SupportedOSPlatform("macos")]
+    private static byte[]? CaptureScreenMacOS()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"v2rayn-screen-{Guid.NewGuid():N}.png");
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = "/usr/sbin/screencapture",
+                ArgumentList = { "-x", path },
+                UseShellExecute = false,
+                CreateNoWindow = true
+            });
+            if (process == null || !process.WaitForExit(10000) || process.ExitCode != 0 || !File.Exists(path))
+            {
+                process?.Kill(true);
+                return null;
+            }
+
+            return File.ReadAllBytes(path);
+        }
+        finally
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
         }
     }
 

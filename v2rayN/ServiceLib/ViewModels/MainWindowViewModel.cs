@@ -353,6 +353,7 @@ public partial class MainWindowViewModel : MyReactiveObject
         {
             await StatisticsManager.Instance.Init(_config, UpdateStatisticsHandler);
         }
+
         await RefreshServersDispatcherAsync();
 
         await Reload();
