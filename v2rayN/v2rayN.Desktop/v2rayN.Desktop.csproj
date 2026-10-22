@@ -32,6 +32,7 @@
 			<TreatAsUsed>true</TreatAsUsed>
 		</PackageReference>
 		<PackageReference Include="SkiaSharp.NativeAssets.Linux" />
+		<PackageReference Include="SkiaSharp.NativeAssets.macOS" />
 	</ItemGroup>
 
 	<ItemGroup>

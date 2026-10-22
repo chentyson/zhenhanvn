@@ -94,11 +94,24 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
 
             ViewModel.ScanScreenInteraction.RegisterHandler(async interaction =>
             {
+                if (!await QRCodeAvaloniaUtils.EnsureScreenCaptureAccessAsync())
+                {
+                    NoticeManager.Instance.Enqueue("macOS 尚未将屏幕录制权限应用到 zhenhanvn。请在系统设置 > 隐私与安全性 > 屏幕录制中允许 zhenhanvn，然后完全退出并重新打开应用。若列表中只有旧的 v2rayN 项，请移除旧项，再为 zhenhanvn 授权。");
+                    interaction.SetOutput(null);
+                    return;
+                }
+
                 ShowHideWindow(false);
-                await Task.Delay(200);
-                var result = QRCodeAvaloniaUtils.CaptureScreen();
-                ShowHideWindow(true);
-                interaction.SetOutput(result);
+                try
+                {
+                    await Task.Delay(300);
+                    var result = QRCodeAvaloniaUtils.CaptureScreen();
+                    interaction.SetOutput(result);
+                }
+                finally
+                {
+                    ShowHideWindow(true);
+                }
             }).DisposeWith(disposables);
 
             ViewModel.BrowseImageFileInteraction.RegisterHandler(async interaction =>
@@ -262,17 +275,31 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
 
     public async Task ScanScreenTaskAsync()
     {
-        ShowHideWindow(false);
-
-        await Task.Delay(200);
-
-        var bytes = QRCodeAvaloniaUtils.CaptureScreen();
-        if (bytes != null && ViewModel != null)
+        if (!await QRCodeAvaloniaUtils.EnsureScreenCaptureAccessAsync())
         {
-            await ViewModel.ScanScreenResult(bytes);
+            NoticeManager.Instance.Enqueue("macOS 尚未将屏幕录制权限应用到 zhenhanvn。请在系统设置 > 隐私与安全性 > 屏幕录制中允许 zhenhanvn，然后完全退出并重新打开应用。若列表中只有旧的 v2rayN 项，请移除旧项，再为 zhenhanvn 授权。");
+            return;
         }
 
-        ShowHideWindow(true);
+        ShowHideWindow(false);
+        try
+        {
+            await Task.Delay(300);
+
+            var bytes = QRCodeAvaloniaUtils.CaptureScreen();
+            if (bytes != null && ViewModel != null)
+            {
+                await ViewModel.ScanScreenResult(bytes);
+            }
+            else
+            {
+                NoticeManager.Instance.Enqueue("屏幕截图失败，请确认已授予屏幕录制权限后重试。");
+            }
+        }
+        finally
+        {
+            ShowHideWindow(true);
+        }
     }
 
     private void MenuCheckUpdate_Click(object? sender, RoutedEventArgs e)

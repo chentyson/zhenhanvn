@@ -37,6 +37,11 @@ fi
 mkdir -p "$AppDir/Contents/MacOS" "$AppDir/Contents/Resources"
 cp -rf "$OutputPath"/* "$AppDir/Contents/MacOS/"
 cp -rf "v2rayN-${Arch}"/* "$AppDir/Contents/MacOS/" 2>/dev/null || true
+# These cores are not included in the macOS package.
+rm -rf \
+    "$AppDir/Contents/MacOS/bin/mihomo" \
+    "$AppDir/Contents/MacOS/bin/sing_box" \
+    "$AppDir/Contents/MacOS/bin/srss"
 # icns keeps its original filename in publish output (AssemblyName rename doesn't affect it)
 cp -f "$OutputPath/v2rayN.icns" "$AppDir/Contents/Resources/AppIcon.icns"
 echo "When this file exists, app will not store configs under this folder" > "$AppDir/Contents/MacOS/NotStoreConfigHere.txt"
@@ -86,11 +91,21 @@ cat > "$AppDir/Contents/Info.plist" <<-EOF
   <true/>
   <key>LSMinimumSystemVersion</key>
   <string>13.6</string>
+  <key>NSScreenCaptureUsageDescription</key>
+  <string>允许 zhenhanvn 截取屏幕内容以识别二维码。</string>
 </dict>
 </plist>
 EOF
 
-# 4) Zip (zip root contains zhenhanvn.app directly)
+# 4) Sign with a stable designated requirement so macOS privacy permissions
+#    continue to identify this app across local rebuilds. This is ad-hoc signing;
+#    release distribution still needs a Developer ID signature and notarization.
+if command -v codesign >/dev/null 2>&1; then
+    codesign --force --deep --sign - --identifier com.boosoo.zhenhanvn \
+        --requirements '=designated => identifier "com.boosoo.zhenhanvn"' "$AppDir"
+fi
+
+# 5) Zip (zip root contains zhenhanvn.app directly)
 rm -f "../zhenhanvn-${Arch}.zip"
 if command -v 7z >/dev/null 2>&1; then
     7z a -tzip "../zhenhanvn-${Arch}.zip" "$AppDir" >/dev/null

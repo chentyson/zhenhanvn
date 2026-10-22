@@ -556,7 +556,10 @@ public partial class MainWindowViewModel : MyReactiveObject
     public async Task AddServerViaScanAsync()
     {
         var result = await ScanScreenInteraction.HandleSafe(RxVoid.Default);
-        await ScanScreenResult(result);
+        if (result != null)
+        {
+            await ScanScreenResult(result);
+        }
     }
 
     public async Task ScanScreenResult(byte[]? bytes)
@@ -568,7 +571,7 @@ public partial class MainWindowViewModel : MyReactiveObject
     public async Task AddServerViaImageAsync()
     {
         var imageFileName = await BrowseImageFileInteraction.HandleSafe(RxVoid.Default);
-        await AddScanResultAsync(imageFileName);
+        await ScanImageResult(imageFileName ?? string.Empty);
     }
 
     public async Task ScanImageResult(string fileName)
