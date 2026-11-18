@@ -1,0 +1,20 @@
+2026/11/14 12:21:34 [client] socks5 listening on 127.0.0.1:49888 -> C498.uwintech.com:49888
+2026/11/14 12:21:35 [client] session established (gen=1, reopen streams=0)
+2026/11/14 12:21:37 [client] open ack sid=1
+2026/11/14 12:22:20 [client] open ack sid=2
+2026/11/14 12:23:18 [client] socks accept: read tcp 127.0.0.1:49888->127.0.0.1:53820: i/o timeout
+2026/11/14 12:23:26 [client] open ack sid=3
+2026/11/14 12:26:17 [client] open ack sid=13
+2026/11/14 12:26:30 [client] stream 13 closeWriteLocal
+2026/11/14 12:26:31 [client] open ack sid=14
+2026/11/14 12:26:32 [client] open ack sid=15
+2026/11/14 12:26:32 [client] open ack sid=16
+2026/11/14 12:26:32 [client] open ack sid=17
+2026/11/14 12:26:32 [client] open ack sid=18
+2026/11/14 12:26:32 [client] open ack sid=19
+2026/11/14 12:26:32 [client] open ack sid=20
+2026/11/14 12:26:32 [client] open ack sid=21
+2026/11/14 12:29:29 [client] open ack sid=22
+2026/11/14 12:29:46 [client] stream 22 closeWriteLocal
+2026/11/14 12:30:03 [client] open ack sid=23
+2026/11/14 12:30:22 [client] stream 23 closeWriteLocal

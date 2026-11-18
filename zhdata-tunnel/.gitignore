@@ -1,0 +1,9 @@
+*.log
+*.err
+*.out
+*.json
+*.exe
+dist/
+big*.bin
+tmp_*
+rawout.txt
