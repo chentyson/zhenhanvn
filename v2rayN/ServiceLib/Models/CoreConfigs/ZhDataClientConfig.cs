@@ -18,7 +18,7 @@ public class ZhDataClientConfig
     public string Uuid { get; set; } = string.Empty;
 
     [JsonPropertyName("conns")]
-    public int Conns { get; set; } = 1;
+    public int Conns { get; set; } = 16;
 
     [JsonPropertyName("spread")]
     public int Spread { get; set; } = 8;
