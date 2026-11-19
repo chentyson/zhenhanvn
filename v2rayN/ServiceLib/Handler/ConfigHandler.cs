@@ -295,6 +295,7 @@ public static class ConfigHandler
             EConfigType.WireGuard => await AddWireguardServer(config, item),
             EConfigType.Anytls => await AddAnytlsServer(config, item),
             EConfigType.Naive => await AddNaiveServer(config, item),
+            EConfigType.ZhData => await AddZhDataServer(config, item),
             _ => -1,
         };
         return ret;
@@ -996,6 +997,52 @@ public static class ConfigHandler
     }
 
     /// <summary>
+    /// Add or edit a zhdata server
+    /// Validates and processes zhdata-specific settings
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="profileItem">zhdata profile to add</param>
+    /// <param name="toFile">Whether to save to file</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> AddZhDataServer(Config config, ProfileItem profileItem, bool toFile = true)
+    {
+        profileItem.ConfigType = EConfigType.ZhData;
+        profileItem.CoreType = ECoreType.zhdata;
+
+        profileItem.Address = profileItem.Address.TrimEx();
+        profileItem.Password = profileItem.Password.TrimEx();
+        profileItem.StreamSecurity = string.Empty;
+        profileItem.Network = string.Empty;
+        profileItem.AllowInsecure = string.Empty;
+        var servers = ZhDataFmt.GetUserServers(profileItem);
+        if (servers.Count == 0)
+        {
+            return -1;
+        }
+
+        var extra = JsonUtils.Deserialize<ZhDataExtraItem>(profileItem.ProtoExtra) ?? new ZhDataExtraItem();
+        if (extra.Servers.Count == 0)
+        {
+            extra.Servers = servers;
+            profileItem.ProtoExtra = JsonUtils.Serialize(extra, false);
+        }
+
+        ZhDataFmt.ApplyFirstServer(profileItem, servers.First());
+        if (profileItem.Address.IsNullOrEmpty() || profileItem.Port <= 0)
+        {
+            return -1;
+        }
+
+        if (profileItem.Password.IsNullOrEmpty())
+        {
+            return -1;
+        }
+
+        await AddServerCommon(config, profileItem, toFile);
+        return 0;
+    }
+
+    /// <summary>
     /// Sort the server list by the specified column
     /// Updates the sort order in the profile extension data
     /// </summary>
@@ -1687,6 +1734,7 @@ public static class ConfigHandler
                 EConfigType.WireGuard => await AddWireguardServer(config, profileItem, false),
                 EConfigType.Anytls => await AddAnytlsServer(config, profileItem, false),
                 EConfigType.Naive => await AddNaiveServer(config, profileItem, false),
+                EConfigType.ZhData => await AddZhDataServer(config, profileItem, false),
                 _ => -1,
             };
 
@@ -2007,6 +2055,7 @@ public static class ConfigHandler
                     EConfigType.WireGuard => await AddWireguardServer(config, profileItem, false),
                     EConfigType.Anytls => await AddAnytlsServer(config, profileItem, false),
                     EConfigType.Naive => await AddNaiveServer(config, profileItem, false),
+                    EConfigType.ZhData => await AddZhDataServer(config, profileItem, false),
                     EConfigType.PolicyGroup or EConfigType.ProxyChain => await AddServerCommon(config, profileItem, false),
                     EConfigType.Outbound => await AddCustomOutboundServer(config, profileItem, true, false),
                     _ => -1,

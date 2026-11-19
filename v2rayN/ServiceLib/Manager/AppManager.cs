@@ -717,7 +717,16 @@ public sealed class AppManager
         }
 
         var item = _config.CoreTypeItem?.FirstOrDefault(it => it.ConfigType == eConfigType);
-        return item?.CoreType ?? ECoreType.Xray;
+        if (item?.CoreType != null)
+        {
+            return (ECoreType)item.CoreType;
+        }
+
+        return eConfigType switch
+        {
+            EConfigType.ZhData => ECoreType.zhdata,
+            _ => ECoreType.Xray,
+        };
     }
 
     #endregion Core Type

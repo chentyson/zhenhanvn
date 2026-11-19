@@ -133,6 +133,10 @@
                                     x:Name="menuAddNaiveServer"
                                     Height="{StaticResource MenuItemHeight}"
                                     Header="{x:Static resx:ResUI.menuAddNaiveServer}" />
+                                <MenuItem
+                                    x:Name="menuAddZhDataServer"
+                                    Height="{StaticResource MenuItemHeight}"
+                                    Header="zhdata" />
                             </MenuItem>
                         </Menu>
                         <Separator />
