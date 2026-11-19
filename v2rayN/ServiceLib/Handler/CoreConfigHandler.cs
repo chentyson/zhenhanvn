@@ -25,6 +25,10 @@ public static class CoreConfigHandler
         {
             result = new CoreConfigSingboxService(context).GenerateClientConfigContent();
         }
+        else if (context.RunCoreType == ECoreType.zhdata)
+        {
+            result = new CoreConfigZhDataService(context).GenerateClientConfigContent();
+        }
         else
         {
             result = new CoreConfigV2rayService(context).GenerateClientConfigContent();
