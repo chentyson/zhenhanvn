@@ -24,7 +24,7 @@ public class ZhDataFmt : BaseFmt
         }
 
         var extra = ParseExtra(item);
-        var servers = GetServers(item, extra);
+        var servers = GetUserServers(item, extra);
         if (servers.Count == 0)
         {
             return null;
@@ -35,19 +35,19 @@ public class ZhDataFmt : BaseFmt
         {
             query.Add($"servers={Utils.UrlEncode(string.Join(",", servers.Select(s => GetUriServer(s))))}");
         }
-        if (extra.Conns > 1)
+        if (extra.Conns != ZhDataExtraItem.DefaultConns)
         {
             query.Add($"conns={extra.Conns}");
         }
-        if (extra.Spread > 0)
+        if (extra.Spread != ZhDataExtraItem.DefaultSpread)
         {
             query.Add($"spread={extra.Spread}");
         }
-        if (extra.DlConns != -1)
+        if (extra.DlConns != ZhDataExtraItem.DefaultDlConns)
         {
             query.Add($"dlconns={extra.DlConns}");
         }
-        if (extra.Migrate != 1)
+        if (extra.Migrate != ZhDataExtraItem.DefaultMigrate)
         {
             query.Add($"migrate={extra.Migrate}");
         }
@@ -58,6 +58,14 @@ public class ZhDataFmt : BaseFmt
         if (extra.Verbose)
         {
             query.Add("verbose=1");
+        }
+        if (!extra.AutoPorts)
+        {
+            query.Add("autoports=0");
+        }
+        if (extra.PortSpan != ZhDataExtraItem.DefaultPortSpan)
+        {
+            query.Add($"portspan={extra.PortSpan}");
         }
 
         var remark = string.Empty;
@@ -86,7 +94,7 @@ public class ZhDataFmt : BaseFmt
         return extra;
     }
 
-    public static List<string> GetServers(ProfileItem? item, ZhDataExtraItem? extra = null)
+    public static List<string> GetUserServers(ProfileItem? item, ZhDataExtraItem? extra = null)
     {
         extra ??= ParseExtra(item);
         var servers = extra.Servers
@@ -102,6 +110,39 @@ public class ZhDataFmt : BaseFmt
         }
 
         return servers.Distinct().ToList();
+    }
+
+    public static List<string> GetServers(ProfileItem? item, ZhDataExtraItem? extra = null)
+    {
+        extra ??= ParseExtra(item);
+        return ExpandAutoPorts(GetUserServers(item, extra), extra);
+    }
+
+    private static List<string> ExpandAutoPorts(List<string> servers, ZhDataExtraItem extra)
+    {
+        if (!extra.AutoPorts || extra.PortSpan <= 1 || servers.Count != 1)
+        {
+            return servers;
+        }
+
+        if (!TrySplitServer(servers.First(), out var host, out var basePort))
+        {
+            return servers;
+        }
+
+        var expanded = new List<string>();
+        for (var offset = 0; offset < extra.PortSpan; offset++)
+        {
+            var port = basePort + offset;
+            if (port > 65535)
+            {
+                break;
+            }
+
+            expanded.Add($"{host}:{port}");
+        }
+
+        return expanded.Distinct().ToList();
     }
 
     private static ProfileItem? ResolveZhData(string result)
@@ -166,6 +207,8 @@ public class ZhDataFmt : BaseFmt
             extra.Migrate = GetQueryInt(query, "migrate", extra.Migrate);
             extra.SlotBase = GetQueryInt(query, "slotbase", extra.SlotBase);
             extra.Verbose = GetQueryBool(query, "verbose") || GetQueryBool(query, "v");
+            extra.AutoPorts = !GetQueryBool(query, "noautoports") && GetQueryBoolOrDefault(query, "autoports", extra.AutoPorts);
+            extra.PortSpan = GetQueryInt(query, "portspan", extra.PortSpan);
 
             var queryServers = GetQueryValue(query, "servers")
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -243,31 +286,53 @@ public class ZhDataFmt : BaseFmt
 
     private static string NormalizeServer(string server)
     {
-        if (server.IsNullOrEmpty())
+        if (!TrySplitServer(server, out var host, out var port))
         {
             return string.Empty;
+        }
+
+        return $"{host}:{port}";
+    }
+
+    private static bool TrySplitServer(string server, out string host, out int port)
+    {
+        host = string.Empty;
+        port = 0;
+
+        if (server.IsNullOrEmpty())
+        {
+            return false;
         }
 
         var value = server.Trim();
         var index = value.LastIndexOf(':');
         if (index <= 0 || index == value.Length - 1)
         {
-            return string.Empty;
+            return false;
         }
 
-        var host = value[..index].Trim();
+        var hostPart = value[..index].Trim();
         var portText = value[(index + 1)..].Trim();
-        if (host.IsNullOrEmpty() || !int.TryParse(portText, out var port) || port <= 0 || port > 65535)
+        if (hostPart.IsNullOrEmpty() || !int.TryParse(portText, out var parsedPort) || parsedPort <= 0 || parsedPort > 65535)
         {
-            return string.Empty;
+            return false;
         }
 
-        if (host.StartsWith('[') && host.EndsWith(']'))
+        if (hostPart.StartsWith('[') && hostPart.EndsWith(']'))
         {
-            host = host[1..^1];
+            host = hostPart;
+        }
+        else if (hostPart.Count(':') > 1)
+        {
+            host = $"[{hostPart}]";
+        }
+        else
+        {
+            host = hostPart;
         }
 
-        return $"{host}:{port}";
+        port = parsedPort;
+        return true;
     }
 
     private static string GetServer(string address, int port)
@@ -282,14 +347,16 @@ public class ZhDataFmt : BaseFmt
 
     private static string GetUriServer(string server)
     {
-        var index = server.LastIndexOf(':');
-        if (index <= 0)
+        if (!TrySplitServer(server, out var host, out var port))
         {
             return server;
         }
 
-        var host = server[..index];
-        var port = server[(index + 1)..];
+        if (host.StartsWith('[') && host.EndsWith(']'))
+        {
+            host = host[1..^1];
+        }
+
         return $"{GetIpv6(host)}:{port}";
     }
 
@@ -303,5 +370,17 @@ public class ZhDataFmt : BaseFmt
     {
         var value = GetQueryValue(query, key).ToLowerInvariant();
         return value is "1" or "true" or "yes" or "on";
+    }
+
+    private static bool GetQueryBoolOrDefault(NameValueCollection query, string key, bool defaultValue)
+    {
+        var value = GetQueryValue(query, key).ToLowerInvariant();
+        return value switch
+        {
+            "" => defaultValue,
+            "1" or "true" or "yes" or "on" => true,
+            "0" or "false" or "no" or "off" => false,
+            _ => defaultValue,
+        };
     }
 }

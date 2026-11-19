@@ -1014,7 +1014,7 @@ public static class ConfigHandler
         profileItem.StreamSecurity = string.Empty;
         profileItem.Network = string.Empty;
         profileItem.AllowInsecure = string.Empty;
-        var servers = ZhDataFmt.GetServers(profileItem);
+        var servers = ZhDataFmt.GetUserServers(profileItem);
         if (servers.Count == 0)
         {
             return -1;
