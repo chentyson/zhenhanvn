@@ -9,21 +9,23 @@
     xmlns:resx="clr-namespace:ServiceLib.Resx;assembly=ServiceLib"
     xmlns:vms="clr-namespace:ServiceLib.ViewModels;assembly=ServiceLib"
     Title="震撼外网v3"
-    Width="1200"
-    Height="800"
-    MinWidth="600"
+    Width="800"
+    Height="600"
+    MinWidth="800"
+    MinHeight="600"
     x:DataType="vms:MainWindowViewModel"
     Design.DataContext="{x:Static dd:DesignData.MainWindow}"
-    Icon="/Assets/NotifyIcon1.ico"
+    Icon="/Assets/hand128.ico"
     ShowInTaskbar="True"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
     <dialogHost:DialogHost CloseOnClickAway="True" DisableOpeningAnimation="True">
+        <Grid>
         <DockPanel>
-            <DockPanel Margin="{StaticResource Margin8}" DockPanel.Dock="Top">
-                <ContentControl x:Name="conTheme" DockPanel.Dock="Right" />
-                <Menu Margin="{StaticResource Margin4}">
-                    <MenuItem Header="{x:Static resx:ResUI.menuServers}">
+            <Grid Height="48" Margin="{StaticResource Margin8}" ColumnDefinitions="Auto,Auto,*,Auto" DockPanel.Dock="Top">
+                <Menu Grid.Column="0" Margin="{StaticResource Margin4}" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <MenuItem Padding="8,4">
+                        <MenuItem.Header><StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Width="16" Height="16" Data="{StaticResource MainIconServers}"/><TextBlock Text="{x:Static resx:ResUI.menuServers}"/></StackPanel></MenuItem.Header>
                         <MenuItem
                             x:Name="menuAddServerViaClipboard"
                             Header="{x:Static resx:ResUI.menuAddServerViaClipboard}"
@@ -53,7 +55,8 @@
                         <MenuItem x:Name="menuAddNaiveServer" Header="{x:Static resx:ResUI.menuAddNaiveServer}" />
                     </MenuItem>
 
-                    <MenuItem Header="{x:Static resx:ResUI.menuSubscription}">
+                    <MenuItem Padding="8,4">
+                        <MenuItem.Header><StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Width="16" Height="16" Data="{StaticResource MainIconSubscription}"/><TextBlock Text="{x:Static resx:ResUI.menuSubscription}"/></StackPanel></MenuItem.Header>
                         <MenuItem x:Name="menuSubSetting" Header="{x:Static resx:ResUI.menuSubSetting}" />
                         <Separator />
                         <MenuItem x:Name="menuSubUpdate" Header="{x:Static resx:ResUI.menuSubUpdate}" />
@@ -62,7 +65,8 @@
                         <MenuItem x:Name="menuSubGroupUpdateViaProxy" Header="{x:Static resx:ResUI.menuSubGroupUpdateViaProxy}" />
                     </MenuItem>
 
-                    <MenuItem Header="{x:Static resx:ResUI.menuSetting}">
+                    <MenuItem Padding="8,4">
+                        <MenuItem.Header><StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Width="16" Height="16" Data="{StaticResource MainIconSettings}"/><TextBlock Text="{x:Static resx:ResUI.menuSetting}"/></StackPanel></MenuItem.Header>
                         <MenuItem x:Name="menuOptionSetting" Header="{x:Static resx:ResUI.menuOptionSetting}" />
                         <MenuItem x:Name="menuRoutingSetting" Header="{x:Static resx:ResUI.menuRoutingSetting}" />
                         <MenuItem x:Name="menuDNSSetting" Header="{x:Static resx:ResUI.menuDNSSetting}" />
@@ -91,22 +95,25 @@
                         <MenuItem x:Name="menuOpenTheFileLocation" Header="{x:Static resx:ResUI.menuOpenTheFileLocation}" />
                     </MenuItem>
 
-                    <MenuItem x:Name="menuHelp" Header="{x:Static resx:ResUI.menuHelp}">
+                    <MenuItem x:Name="menuHelp" Padding="8,4">
+                        <MenuItem.Header><StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Width="16" Height="16" Data="{StaticResource MainIconHelp}"/><TextBlock Text="{x:Static resx:ResUI.menuHelp}"/></StackPanel></MenuItem.Header>
                         <MenuItem x:Name="menuCheckUpdate" Header="{x:Static resx:ResUI.menuCheckUpdate}" />
                     </MenuItem>
 
-                    <MenuItem x:Name="menuReload" Header="{x:Static resx:ResUI.menuReload}" />
+                    <MenuItem x:Name="menuReload" Padding="8,4"><MenuItem.Header><StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Width="16" Height="16" Data="{StaticResource MainIconReload}"/><TextBlock Text="{x:Static resx:ResUI.menuReload}"/></StackPanel></MenuItem.Header></MenuItem>
 
-                    <MenuItem x:Name="menuClose" Header="{x:Static resx:ResUI.menuExit}" />
+                    <MenuItem x:Name="menuClose" Padding="8,4"><MenuItem.Header><StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Width="16" Height="16" Data="{StaticResource MainIconExit}"/><TextBlock Text="{x:Static resx:ResUI.menuExit}"/></StackPanel></MenuItem.Header></MenuItem>
                 </Menu>
 
                 <Button
                     x:Name="btnNewUpdate"
+                    Grid.Column="1"
                     Margin="{StaticResource MarginLr8}"
-                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
                     Content="{x:Static resx:ResUI.menuNewUpdate}"
                     IsVisible="False" />
-            </DockPanel>
+                <ContentControl x:Name="conTheme" Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            </Grid>
 
             <ContentControl x:Name="contentStatusBarView" DockPanel.Dock="Bottom" />
 
@@ -135,21 +142,25 @@
                     <TabControl
                         x:Name="tabMain1"
                         Grid.Row="2"
+                        IsVisible="False"
                         TabStripPlacement="Left">
-                        <TabItem x:Name="tabMsgView1" Header="{x:Static resx:ResUI.MsgInformationTitle}" />
-                        <TabItem x:Name="tabClashProxies1" Header="{x:Static resx:ResUI.TbProxies}" />
-                        <TabItem x:Name="tabClashConnections1" Header="{x:Static resx:ResUI.TbConnections}" />
+                        <TabItem x:Name="tabMsgView1"><TabItem.Header><StackPanel Spacing="4"><PathIcon Width="18" Height="18" HorizontalAlignment="Center" Data="{StaticResource MainIconMessages}"/><TextBlock HorizontalAlignment="Center" Text="{x:Static resx:ResUI.MsgInformationTitle}"/></StackPanel></TabItem.Header></TabItem>
+                        <TabItem x:Name="tabClashProxies1"><TabItem.Header><StackPanel Spacing="4"><PathIcon Width="18" Height="18" HorizontalAlignment="Center" Data="{StaticResource MainIconProxies}"/><TextBlock HorizontalAlignment="Center" Text="{x:Static resx:ResUI.TbProxies}"/></StackPanel></TabItem.Header></TabItem>
+                        <TabItem x:Name="tabClashConnections1"><TabItem.Header><StackPanel Spacing="4"><PathIcon Width="18" Height="18" HorizontalAlignment="Center" Data="{StaticResource MainIconConnections}"/><TextBlock HorizontalAlignment="Center" Text="{x:Static resx:ResUI.TbConnections}"/></StackPanel></TabItem.Header></TabItem>
                     </TabControl>
+                    <ContentControl x:Name="msgViewOnly1" Grid.Row="2" />
                 </Grid>
                 <Grid x:Name="gridMain2" IsVisible="False">
                     <TabControl x:Name="tabMain2" TabStripPlacement="Left">
-                        <TabItem x:Name="tabProfiles2" Header="{x:Static resx:ResUI.menuServers}" />
-                        <TabItem x:Name="tabMsgView2" Header="{x:Static resx:ResUI.MsgInformationTitle}" />
-                        <TabItem x:Name="tabClashProxies2" Header="{x:Static resx:ResUI.TbProxies}" />
-                        <TabItem x:Name="tabClashConnections2" Header="{x:Static resx:ResUI.TbConnections}" />
+                        <TabItem x:Name="tabProfiles2"><TabItem.Header><StackPanel Spacing="4"><PathIcon Width="18" Height="18" HorizontalAlignment="Center" Data="{StaticResource MainIconServers}"/><TextBlock HorizontalAlignment="Center" Text="{x:Static resx:ResUI.menuServers}"/></StackPanel></TabItem.Header></TabItem>
+                        <TabItem x:Name="tabMsgView2"><TabItem.Header><StackPanel Spacing="4"><PathIcon Width="18" Height="18" HorizontalAlignment="Center" Data="{StaticResource MainIconMessages}"/><TextBlock HorizontalAlignment="Center" Text="{x:Static resx:ResUI.MsgInformationTitle}"/></StackPanel></TabItem.Header></TabItem>
+                        <TabItem x:Name="tabClashProxies2"><TabItem.Header><StackPanel Spacing="4"><PathIcon Width="18" Height="18" HorizontalAlignment="Center" Data="{StaticResource MainIconProxies}"/><TextBlock HorizontalAlignment="Center" Text="{x:Static resx:ResUI.TbProxies}"/></StackPanel></TabItem.Header></TabItem>
+                        <TabItem x:Name="tabClashConnections2"><TabItem.Header><StackPanel Spacing="4"><PathIcon Width="18" Height="18" HorizontalAlignment="Center" Data="{StaticResource MainIconConnections}"/><TextBlock HorizontalAlignment="Center" Text="{x:Static resx:ResUI.TbConnections}"/></StackPanel></TabItem.Header></TabItem>
                     </TabControl>
                 </Grid>
             </Grid>
         </DockPanel>
+        <Image Width="76" Height="73" Margin="0,0,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Stretch="Uniform" Source="/Assets/pubnumber.png" ToolTip.Tip="公众号"/>
+        </Grid>
     </dialogHost:DialogHost>
 </Window>

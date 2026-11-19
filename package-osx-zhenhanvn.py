@@ -194,6 +194,8 @@ def build_app(publish_dir: str, arch: str, version: str, core_zip: str, work_dir
             rel = rel[len(prefix):]
             if not rel.startswith("bin/"):
                 continue
+            if rel.startswith(("bin/mihomo/", "bin/sing_box/", "bin/srss/")):
+                continue
             dest = os.path.join(macos_dir, rel.replace("/", os.sep))
             os.makedirs(os.path.dirname(dest), exist_ok=True)
             with zf.open(info) as src, open(dest, "wb") as out:

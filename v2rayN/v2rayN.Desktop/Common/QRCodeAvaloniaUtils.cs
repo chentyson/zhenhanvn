@@ -1,25 +1,98 @@
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 using SkiaSharp;
 
 namespace v2rayN.Desktop.Common;
 
 public partial class QRCodeAvaloniaUtils
 {
-    public static byte[]? CaptureScreen()
+    public static Task<bool> EnsureScreenCaptureAccessAsync()
     {
-        if (!Utils.IsWindows())
+        if (!OperatingSystem.IsMacOS())
         {
-            return null;
+            return Task.FromResult(true);
         }
 
+        var hasScreenCaptureAccess = CGPreflightScreenCaptureAccess();
+        if (hasScreenCaptureAccess)
+        {
+            Logging.SaveLog("ScreenCapture permission preflight: granted");
+            return Task.FromResult(true);
+        }
+
+        // macOS applies a newly granted screen recording permission after the
+        // app restarts. Do not leave the scan menu waiting while Settings is open.
+        var requested = CGRequestScreenCaptureAccess();
+        var hasAccessAfterRequest = requested || CGPreflightScreenCaptureAccess();
+        Logging.SaveLog($"ScreenCapture permission preflight: denied; request result: {requested}; post-request check: {hasAccessAfterRequest}; process: {Environment.ProcessPath}");
+        return Task.FromResult(hasAccessAfterRequest);
+    }
+
+    public static byte[]? CaptureScreen()
+    {
         try
         {
-            return CaptureScreenWindows();
+            if (Utils.IsWindows())
+            {
+                return CaptureScreenWindows();
+            }
+
+            if (OperatingSystem.IsMacOS())
+            {
+                return CaptureScreenMacOS();
+            }
+
+            return null;
         }
         catch (Exception ex)
         {
             Logging.SaveLog("CaptureScreen", ex);
             return null;
+        }
+    }
+
+    [SupportedOSPlatform("macos")]
+    private static byte[]? CaptureScreenMacOS()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"zhenhanvn-screen-{Guid.NewGuid():N}.png");
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = "/usr/sbin/screencapture",
+                ArgumentList = { "-x", path },
+                UseShellExecute = false,
+                CreateNoWindow = true
+            });
+            if (process == null)
+            {
+                Logging.SaveLog("ScreenCapture failed: could not start /usr/sbin/screencapture");
+                return null;
+            }
+
+            if (!process.WaitForExit(10000))
+            {
+                process.Kill(true);
+                Logging.SaveLog("ScreenCapture failed: screencapture timed out after 10 seconds");
+                return null;
+            }
+
+            if (process.ExitCode != 0 || !File.Exists(path))
+            {
+                Logging.SaveLog($"ScreenCapture failed: screencapture exit code {process.ExitCode}; output exists: {File.Exists(path)}");
+                return null;
+            }
+
+            var bytes = File.ReadAllBytes(path);
+            Logging.SaveLog($"ScreenCapture succeeded: {bytes.Length} bytes");
+            return bytes;
+        }
+        finally
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
         }
     }
 
@@ -121,6 +194,14 @@ public partial class QRCodeAvaloniaUtils
     }
 
     #region Win32 API
+
+    [LibraryImport("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics", EntryPoint = "CGPreflightScreenCaptureAccess")]
+    [return: MarshalAs(UnmanagedType.I1)]
+    private static partial bool CGPreflightScreenCaptureAccess();
+
+    [LibraryImport("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics", EntryPoint = "CGRequestScreenCaptureAccess")]
+    [return: MarshalAs(UnmanagedType.I1)]
+    private static partial bool CGRequestScreenCaptureAccess();
 
     [LibraryImport("user32.dll")]
     private static partial IntPtr GetDC(IntPtr hwnd);

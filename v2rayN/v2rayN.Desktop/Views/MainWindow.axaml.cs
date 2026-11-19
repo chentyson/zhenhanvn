@@ -21,7 +21,7 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
 
         _config = AppManager.Instance.Config;
         _manager = new WindowNotificationManager(TopLevel.GetTopLevel(this)) { MaxItems = 3, Position = NotificationPosition.TopRight };
-
+        Opened += MainWindow_Opened;
         KeyDown += MainWindow_KeyDown;
         menuSettingsSetUWP.Click += MenuSettingsSetUWP_Click;
         menuCheckUpdate.Click += MenuCheckUpdate_Click;
@@ -94,11 +94,24 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
 
             ViewModel.ScanScreenInteraction.RegisterHandler(async interaction =>
             {
+                if (!await QRCodeAvaloniaUtils.EnsureScreenCaptureAccessAsync())
+                {
+                    NoticeManager.Instance.Enqueue("macOS 尚未将屏幕录制权限应用到 zhenhanvn。请在系统设置 > 隐私与安全性 > 屏幕录制中允许 zhenhanvn，然后完全退出并重新打开应用。若列表中只有旧的 v2rayN 项，请移除旧项，再为 zhenhanvn 授权。");
+                    interaction.SetOutput(null);
+                    return;
+                }
+
                 ShowHideWindow(false);
-                await Task.Delay(200);
-                var result = QRCodeAvaloniaUtils.CaptureScreen();
-                ShowHideWindow(true);
-                interaction.SetOutput(result);
+                try
+                {
+                    await Task.Delay(300);
+                    var result = QRCodeAvaloniaUtils.CaptureScreen();
+                    interaction.SetOutput(result);
+                }
+                finally
+                {
+                    ShowHideWindow(true);
+                }
             }).DisposeWith(disposables);
 
             ViewModel.BrowseImageFileInteraction.RegisterHandler(async interaction =>
@@ -151,7 +164,10 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         else
         {
             Title = $"震撼外网v3-{Utils.GetVersionInfo()}";
-            menuAddServerViaScan.IsVisible = false;
+            if (Utils.IsLinux())
+            {
+                menuAddServerViaScan.IsVisible = false;
+            }
         }
 
         if (_config.UiItem.AutoHideStartup && Utils.IsWindows())
@@ -259,17 +275,31 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
 
     public async Task ScanScreenTaskAsync()
     {
-        ShowHideWindow(false);
-
-        await Task.Delay(200);
-
-        var bytes = QRCodeAvaloniaUtils.CaptureScreen();
-        if (bytes != null && ViewModel != null)
+        if (!await QRCodeAvaloniaUtils.EnsureScreenCaptureAccessAsync())
         {
-            await ViewModel.ScanScreenResult(bytes);
+            NoticeManager.Instance.Enqueue("macOS 尚未将屏幕录制权限应用到 zhenhanvn。请在系统设置 > 隐私与安全性 > 屏幕录制中允许 zhenhanvn，然后完全退出并重新打开应用。若列表中只有旧的 v2rayN 项，请移除旧项，再为 zhenhanvn 授权。");
+            return;
         }
 
-        ShowHideWindow(true);
+        ShowHideWindow(false);
+        try
+        {
+            await Task.Delay(300);
+
+            var bytes = QRCodeAvaloniaUtils.CaptureScreen();
+            if (bytes != null && ViewModel != null)
+            {
+                await ViewModel.ScanScreenResult(bytes);
+            }
+            else
+            {
+                NoticeManager.Instance.Enqueue("屏幕截图失败，请确认已授予屏幕录制权限后重试。");
+            }
+        }
+        finally
+        {
+            ShowHideWindow(true);
+        }
     }
 
     private void MenuCheckUpdate_Click(object? sender, RoutedEventArgs e)
@@ -286,6 +316,20 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         _backupAndRestoreView ??= new BackupAndRestoreView();
         _backupAndRestoreView.ViewModel = ViewModel?.BackupAndRestoreViewModel;
         DialogHost.Show(_backupAndRestoreView);
+    }
+
+    private async void MainWindow_Opened(object? sender, EventArgs e)
+    {
+        if (!Utils.IsMacOS() || AppManager.Instance.LinuxSudoPwd.IsNotEmpty())
+        {
+            return;
+        }
+
+        var result = await DialogHost.Show(new SudoPasswordInputView());
+        if (result is string password && password.IsNotEmpty())
+        {
+            AppManager.Instance.LinuxSudoPwd = password;
+        }
     }
 
     private async void MenuClose_Click(object? sender, RoutedEventArgs e)
@@ -363,6 +407,10 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
     protected override void OnLoaded(object? sender, RoutedEventArgs e)
     {
         base.OnLoaded(sender, e);
+        // Match the Windows main-window startup size even when an older, smaller
+        // Avalonia size was saved in the cross-platform configuration.
+        Width = 800;
+        Height = 600;
         if (_config.UiItem.AutoHideStartup)
         {
             ShowHideWindow(false);
@@ -419,7 +467,6 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
                 this.OneWayBind(ViewModel, vm => vm.MsgViewModel, v => v.tabMsgView.Content).DisposeWith(currentLayoutDisposables);
                 this.OneWayBind(ViewModel, vm => vm.ClashProxiesViewModel, v => v.tabClashProxies.Content).DisposeWith(currentLayoutDisposables);
                 this.OneWayBind(ViewModel, vm => vm.ClashConnectionsViewModel, v => v.tabClashConnections.Content).DisposeWith(currentLayoutDisposables);
-                this.OneWayBind(ViewModel, vm => vm.ShowClashUI, v => v.tabMsgView.IsVisible).DisposeWith(currentLayoutDisposables);
                 this.OneWayBind(ViewModel, vm => vm.ShowClashUI, v => v.tabClashProxies.IsVisible).DisposeWith(currentLayoutDisposables);
                 this.OneWayBind(ViewModel, vm => vm.ShowClashUI, v => v.tabClashConnections.IsVisible).DisposeWith(currentLayoutDisposables);
                 this.Bind(ViewModel, vm => vm.TabMainSelectedIndex, v => v.tabMain.SelectedIndex).DisposeWith(currentLayoutDisposables);
@@ -428,11 +475,18 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
             case EGirdOrientation.Vertical:
                 this.OneWayBind(ViewModel, vm => vm.ProfilesViewModel, v => v.tabProfiles1.Content).DisposeWith(currentLayoutDisposables);
                 this.OneWayBind(ViewModel, vm => vm.MsgViewModel, v => v.tabMsgView1.Content).DisposeWith(currentLayoutDisposables);
+                this.OneWayBind(ViewModel, vm => vm.MsgViewModel, v => v.msgViewOnly1.Content).DisposeWith(currentLayoutDisposables);
                 this.OneWayBind(ViewModel, vm => vm.ClashProxiesViewModel, v => v.tabClashProxies1.Content).DisposeWith(currentLayoutDisposables);
                 this.OneWayBind(ViewModel, vm => vm.ClashConnectionsViewModel, v => v.tabClashConnections1.Content).DisposeWith(currentLayoutDisposables);
-                this.OneWayBind(ViewModel, vm => vm.ShowClashUI, v => v.tabMsgView1.IsVisible).DisposeWith(currentLayoutDisposables);
                 this.OneWayBind(ViewModel, vm => vm.ShowClashUI, v => v.tabClashProxies1.IsVisible).DisposeWith(currentLayoutDisposables);
                 this.OneWayBind(ViewModel, vm => vm.ShowClashUI, v => v.tabClashConnections1.IsVisible).DisposeWith(currentLayoutDisposables);
+                this.WhenAnyValue(v => v.ViewModel.ShowClashUI)
+                    .Subscribe(showClashUI =>
+                    {
+                        tabMain1.IsVisible = showClashUI;
+                        msgViewOnly1.IsVisible = !showClashUI;
+                    })
+                    .DisposeWith(currentLayoutDisposables);
                 this.Bind(ViewModel, vm => vm.TabMainSelectedIndex, v => v.tabMain1.SelectedIndex).DisposeWith(currentLayoutDisposables);
                 break;
 
@@ -473,6 +527,7 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
 
         tabProfiles1.Content = null;
         tabMsgView1.Content = null;
+        msgViewOnly1.Content = null;
         tabClashProxies1.Content = null;
         tabClashConnections1.Content = null;
 

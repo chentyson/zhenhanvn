@@ -87,4 +87,29 @@ public partial class MsgView : ReactiveUserControl<MsgViewModel>
     {
         ClearMsg();
     }
+
+    private void btnTroubleshoot_Click(object? sender, RoutedEventArgs e)
+    {
+        var config = AppManager.Instance.Config;
+        config.CoreBasicItem.Loglevel = "debug";
+        config.SystemProxyItem.SysProxyType = ESysProxyType.ForcedClear;
+        config.TunModeItem.EnableTun = false;
+        StatusBarViewModel.Instance.SystemProxySelected = (int)ESysProxyType.ForcedClear;
+        StatusBarViewModel.Instance.EnableTun = false;
+        ClearMsg();
+        _ = ConfigHandler.SaveConfig(config);
+        StatusBarViewModel.Instance.ReloadRequested.Publish();
+    }
+
+    private void btnRestoreDefault_Click(object? sender, RoutedEventArgs e)
+    {
+        var config = AppManager.Instance.Config;
+        config.CoreBasicItem.Loglevel = "warning";
+        config.SystemProxyItem.SysProxyType = ESysProxyType.ForcedChange;
+        config.TunModeItem.EnableTun = false;
+        StatusBarViewModel.Instance.SystemProxySelected = (int)ESysProxyType.ForcedChange;
+        StatusBarViewModel.Instance.EnableTun = false;
+        _ = ConfigHandler.SaveConfig(config);
+        StatusBarViewModel.Instance.ReloadRequested.Publish();
+    }
 }
