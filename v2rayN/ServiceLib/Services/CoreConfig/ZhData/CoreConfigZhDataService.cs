@@ -4,6 +4,7 @@ public class CoreConfigZhDataService(CoreConfigContext context)
 {
     private static readonly string _tag = "CoreConfigZhDataService";
     private readonly ProfileItem _node = context.Node;
+    private readonly Config _config = context.AppConfig;
 
     public RetResult GenerateClientConfigContent()
     {
@@ -24,6 +25,7 @@ public class CoreConfigZhDataService(CoreConfigContext context)
                 return ret;
             }
 
+            var loglevel = ResolveLogLevel(_config, extra);
             var config = new ZhDataClientConfig
             {
                 Mode = "client",
@@ -36,8 +38,8 @@ public class CoreConfigZhDataService(CoreConfigContext context)
                 DlConns = extra.DlConns,
                 Migrate = extra.Migrate,
                 SlotBase = extra.SlotBase,
-                LogLevel = extra.Verbose ? "debug" : "info",
-                Verbose = extra.Verbose,
+                LogLevel = loglevel,
+                Verbose = loglevel.Equals("debug", StringComparison.OrdinalIgnoreCase),
             };
 
             ret.Success = true;
@@ -51,5 +53,21 @@ public class CoreConfigZhDataService(CoreConfigContext context)
             ret.Msg = ResUI.FailedGenDefaultConfiguration;
             return ret;
         }
+    }
+
+    private static string ResolveLogLevel(Config config, ZhDataExtraItem extra)
+    {
+        if (!config.CoreBasicItem.LogEnabled)
+        {
+            return Global.None;
+        }
+
+        var level = config.CoreBasicItem.Loglevel.TrimEx().ToLowerInvariant();
+        return level switch
+        {
+            Global.None or "error" or "warning" or "warn" or "info" or "debug" => level == "warn" ? "warning" : level,
+            "" => extra.Verbose ? "debug" : "info",
+            _ => extra.Verbose ? "debug" : "info",
+        };
     }
 }
