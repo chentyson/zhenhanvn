@@ -417,34 +417,37 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
             KcpMtu = KcpMtu > 0 ? KcpMtu : null,
         };
 
-        SelectedSource.SetProtocolExtra(SelectedSource.GetProtocolExtra() with
+        if (SelectedSource.ConfigType != EConfigType.ZhData)
         {
-            Ports = Ports.NullIfEmpty(),
-            AlterId = AlterId > 0 ? AlterId.ToString() : null,
-            Flow = Flow.NullIfEmpty(),
-            SalamanderPass = SalamanderPass.NullIfEmpty(),
-            UpMbps = UpMbps,
-            DownMbps = DownMbps,
-            HopInterval = HopInterval.NullIfEmpty(),
-            VmessSecurity = VmessSecurity.NullIfEmpty(),
-            VlessEncryption = VlessEncryption.NullIfEmpty(),
-            SsMethod = SsMethod.NullIfEmpty(),
-            HttpHeaders = SelectedSource.ConfigType == EConfigType.HTTP ? HttpHeadersJson.NullIfEmpty() : null,
-            WgPublicKey = WgPublicKey.NullIfEmpty(),
-            WgPresharedKey = WgPresharedKey.NullIfEmpty(),
-            WgInterfaceAddress = WgInterfaceAddress.NullIfEmpty(),
-            WgReserved = WgReserved.NullIfEmpty(),
-            WgMtu = WgMtu >= 576 ? WgMtu : null,
-            WgDns = WgDns.NullIfEmpty(),
-            Uot = Uot ? true : null,
-            CongestionControl = CongestionControl.NullIfEmpty(),
-            InsecureConcurrency = InsecureConcurrency > 0 ? InsecureConcurrency : null,
-            NaiveQuic = NaiveQuic ? true : null,
-            Hy2RealmUrl = realm?.ToUri().NullIfEmpty(),
-            GeckoMinPacketSize = GeckoMinPacketSize > 0 ? GeckoMinPacketSize.ToString() : null,
-            GeckoMaxPacketSize = GeckoMaxPacketSize > 0 ? GeckoMaxPacketSize.ToString() : null,
-        });
-        SelectedSource.SetTransportExtra(transport);
+            SelectedSource.SetProtocolExtra(SelectedSource.GetProtocolExtra() with
+            {
+                Ports = Ports.NullIfEmpty(),
+                AlterId = AlterId > 0 ? AlterId.ToString() : null,
+                Flow = Flow.NullIfEmpty(),
+                SalamanderPass = SalamanderPass.NullIfEmpty(),
+                UpMbps = UpMbps,
+                DownMbps = DownMbps,
+                HopInterval = HopInterval.NullIfEmpty(),
+                VmessSecurity = VmessSecurity.NullIfEmpty(),
+                VlessEncryption = VlessEncryption.NullIfEmpty(),
+                SsMethod = SsMethod.NullIfEmpty(),
+                HttpHeaders = SelectedSource.ConfigType == EConfigType.HTTP ? HttpHeadersJson.NullIfEmpty() : null,
+                WgPublicKey = WgPublicKey.NullIfEmpty(),
+                WgPresharedKey = WgPresharedKey.NullIfEmpty(),
+                WgInterfaceAddress = WgInterfaceAddress.NullIfEmpty(),
+                WgReserved = WgReserved.NullIfEmpty(),
+                WgMtu = WgMtu >= 576 ? WgMtu : null,
+                WgDns = WgDns.NullIfEmpty(),
+                Uot = Uot ? true : null,
+                CongestionControl = CongestionControl.NullIfEmpty(),
+                InsecureConcurrency = InsecureConcurrency > 0 ? InsecureConcurrency : null,
+                NaiveQuic = NaiveQuic ? true : null,
+                Hy2RealmUrl = realm?.ToUri().NullIfEmpty(),
+                GeckoMinPacketSize = GeckoMinPacketSize > 0 ? GeckoMinPacketSize.ToString() : null,
+                GeckoMaxPacketSize = GeckoMaxPacketSize > 0 ? GeckoMaxPacketSize.ToString() : null,
+            });
+            SelectedSource.SetTransportExtra(transport);
+        }
 
         if (await ConfigHandler.AddServer(_config, SelectedSource) == 0)
         {
