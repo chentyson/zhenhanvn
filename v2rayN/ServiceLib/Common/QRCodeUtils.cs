@@ -1,6 +1,8 @@
 using QRCoder;
 using QRCoder.Exceptions;
 using SkiaSharp;
+using ZXing;
+using ZXing.Common;
 using ZXing.SkiaSharp;
 
 namespace ServiceLib.Common;
@@ -93,7 +95,21 @@ public class QRCodeUtils
 
     private static string? ReaderBarcode(SKBitmap? bitmap)
     {
-        var reader = new BarcodeReader();
+        if (bitmap == null)
+        {
+            return null;
+        }
+
+        // Only QR codes are expected; TryHarder improves decoding of low-resolution
+        // or partially-framed captures (e.g. a full-screen grab where the code is small).
+        var reader = new BarcodeReader
+        {
+            Options = new DecodingOptions
+            {
+                TryHarder = true,
+                PossibleFormats = new List<BarcodeFormat> { BarcodeFormat.QR_CODE }
+            }
+        };
         var result = reader.Decode(bitmap);
 
         if (result != null && result.Text.IsNotEmpty())

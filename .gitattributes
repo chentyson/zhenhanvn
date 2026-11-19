@@ -61,3 +61,11 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+
+###############################################################################
+# Shell scripts that bash runs on Linux/macOS (also embedded as resources).
+# Keep LF in the working copy so a Windows checkout with core.autocrlf cannot
+# hand the build a CRLF script (bash then fails in ways the app never surfaces).
+###############################################################################
+*.sh text eol=lf
+v2rayN/ServiceLib/Sample/*_sh text eol=lf

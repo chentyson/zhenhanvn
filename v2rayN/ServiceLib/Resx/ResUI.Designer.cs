@@ -608,7 +608,43 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("LvTestSpeed", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 Expire 的本地化字符串。
+        /// </summary>
+        public static string LvExpireDate {
+            get {
+                return ResourceManager.GetString("LvExpireDate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Unlimited 的本地化字符串。
+        /// </summary>
+        public static string TipUnlimitedTime {
+            get {
+                return ResourceManager.GetString("TipUnlimitedTime", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Traffic / Limit 的本地化字符串。
+        /// </summary>
+        public static string LvTrafficLimit {
+            get {
+                return ResourceManager.GetString("LvTrafficLimit", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 The node &quot;{0}&quot; you are using has expired. Renew it now? 的本地化字符串。
+        /// </summary>
+        public static string MsgExpiredRenew {
+            get {
+                return ResourceManager.GetString("MsgExpiredRenew", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 TLS 的本地化字符串。
         /// </summary>
@@ -4551,6 +4587,15 @@ namespace ServiceLib.Resx {
         public static string TbSettingsLinuxSudoPasswordTip {
             get {
                 return ResourceManager.GetString("TbSettingsLinuxSudoPasswordTip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Screen lock password 的本地化字符串。
+        /// </summary>
+        public static string TbSettingsMacLoginPassword {
+            get {
+                return ResourceManager.GetString("TbSettingsMacLoginPassword", resourceCulture);
             }
         }
         

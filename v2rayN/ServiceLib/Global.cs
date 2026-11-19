@@ -109,6 +109,17 @@ public class Global
     public const string SingboxSrsDownloadHttpClientTag = "srs-download-http-client";
 
     public const int Hysteria2DefaultHopInt = 30;
+
+    // s-ui ZY4 account query service (sub/queryService.go)
+    public const int AccountQueryPort = 62444;
+    public const string AccountQueryPath = "/62444/query";
+    public const int AccountQueryTimeout = 5;
+
+    // Customer service renewal page, opened in the browser when the active
+    // node has expired: https://cs.boosoo.cn/?input=续费<别名>
+    public const string AccountRenewUrl = "https://cs.boosoo.cn/?input=";
+    public const string AccountRenewKeyword = "续费";
+
     public const string PolicyGroupExcludeKeywords = @"剩余|过期|到期|重置|[Rr]emaining|[Ee]xpir|[Rr]eset";
     public const string PolicyGroupDefaultAllFilter = $"^(?!.*(?:{PolicyGroupExcludeKeywords})).*$";
 

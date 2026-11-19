@@ -885,6 +885,15 @@
   <data name="LvTestSpeed" xml:space="preserve">
     <value>Sebesség (MB/s)</value>
   </data>
+  <data name="LvExpireDate" xml:space="preserve">
+    <value>Lejár</value>
+  </data>
+  <data name="TipUnlimitedTime" xml:space="preserve">
+    <value>Korlátlan</value>
+  </data>
+  <data name="LvTrafficLimit" xml:space="preserve">
+    <value>Forgalom / Limit</value>
+  </data>
   <data name="FailedToRunCore" xml:space="preserve">
     <value>Nem sikerült futtatni a Core-t, kérjük, ellenőrizze a prompt információt</value>
   </data>
@@ -1345,7 +1354,10 @@
     <value>Rendszer sudo jelszó</value>
   </data>
   <data name="TbSettingsLinuxSudoPasswordTip" xml:space="preserve">
-    <value>A jelszót a parancssoron keresztül ellenőrizzük. Ha egy érvényesítési hiba miatt az alkalmazás hibásan működik, indítsa újra az alkalmazást. A jelszó nem kerül tárolásra, és minden újraindítás után újra meg kell adni.</value>
+    <value>A jelszót a parancssoron keresztül ellenőrizzük. Ha egy érvényesítési hiba miatt az alkalmazás hibásan működik, indítsa újra az alkalmazást. Csak a rendszergazdai jogot igénylő lépésekhez használjuk (rendszerproxy beállítása vagy törlése, TUN mód), nem kerül tárolásra, és futtatásonként legfeljebb egyszer kérjük be.</value>
+  </data>
+  <data name="TbSettingsMacLoginPassword" xml:space="preserve">
+    <value>Képernyőzár jelszava</value>
   </data>
   <data name="TransportHeaderType5" xml:space="preserve">
     <value>xhttp mód</value>

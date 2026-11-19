@@ -24,38 +24,51 @@ public class QRCodeWindowsUtils
         }
     }
 
+    /// <summary>
+    /// Captures the entire virtual screen (all monitors) so a QR code can be
+    /// displayed anywhere on any display. The virtual-screen metrics and
+    /// CopyFromScreen share the same coordinate space (which depends on the
+    /// process DPI awareness), so the captured rectangle is always correct
+    /// regardless of the system DPI scaling or monitor layout.
+    /// </summary>
     public static byte[]? CaptureScreen(Window window)
     {
         try
         {
-            GetDpi(window, out var dpiX, out var dpiY);
+            int x = GetSystemMetrics(SM_XVIRTUALSCREEN);
+            int y = GetSystemMetrics(SM_YVIRTUALSCREEN);
+            int width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+            int height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
-            var left = (int)SystemParameters.WorkArea.Left;
-            var top = (int)SystemParameters.WorkArea.Top;
-            var width = (int)(SystemParameters.WorkArea.Width / dpiX);
-            var height = (int)(SystemParameters.WorkArea.Height / dpiY);
+            if (width <= 0 || height <= 0)
+            {
+                // Fallback to the primary work area.
+                x = (int)SystemParameters.WorkArea.Left;
+                y = (int)SystemParameters.WorkArea.Top;
+                width = (int)SystemParameters.WorkArea.Width;
+                height = (int)SystemParameters.WorkArea.Height;
+            }
 
             using var fullImage = new Bitmap(width, height);
             using var g = Graphics.FromImage(fullImage);
 
-            g.CopyFromScreen(left, top, 0, 0, fullImage.Size, CopyPixelOperation.SourceCopy);
-            //fullImage.Save("test1.png", ImageFormat.Png);
+            g.CopyFromScreen(x, y, 0, 0, fullImage.Size, CopyPixelOperation.SourceCopy);
             return ImageToByte(fullImage);
         }
-        catch
+        catch (Exception ex)
         {
+            Logging.SaveLog("CaptureScreen", ex);
             return null;
         }
     }
 
-    private static void GetDpi(Window window, out float x, out float y)
-    {
-        var hWnd = new WindowInteropHelper(window).EnsureHandle();
-        var g = Graphics.FromHwnd(hWnd);
+    private const int SM_XVIRTUALSCREEN = 76;
+    private const int SM_YVIRTUALSCREEN = 77;
+    private const int SM_CXVIRTUALSCREEN = 78;
+    private const int SM_CYVIRTUALSCREEN = 79;
 
-        x = 96 / g.DpiX;
-        y = 96 / g.DpiY;
-    }
+    [DllImport("user32.dll")]
+    private static extern int GetSystemMetrics(int nIndex);
 
     private static ImageSource? ByteToImage(IEnumerable imageData)
     {

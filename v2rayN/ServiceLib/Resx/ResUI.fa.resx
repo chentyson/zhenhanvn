@@ -888,6 +888,15 @@
   <data name="LvTestSpeed" xml:space="preserve">
     <value>سرعت (MB/s)</value>
   </data>
+  <data name="LvExpireDate" xml:space="preserve">
+    <value>Expire</value>
+  </data>
+  <data name="TipUnlimitedTime" xml:space="preserve">
+    <value>Unlimited</value>
+  </data>
+  <data name="LvTrafficLimit" xml:space="preserve">
+    <value>ترافیک / سقف</value>
+  </data>
   <data name="FailedToRunCore" xml:space="preserve">
     <value>Core اجرا نشد، لطفاً گزارش را ببینید</value>
   </data>
@@ -1348,7 +1357,10 @@
     <value>رمز عبور sudo سیستم</value>
   </data>
   <data name="TbSettingsLinuxSudoPasswordTip" xml:space="preserve">
-    <value>The password will be validated via the command line. If a validation error causes the application to malfunction, please restart the application. The password will not be stored and must be entered again after each restart.</value>
+    <value>رمز عبور از طریق خط فرمان اعتبارسنجی می‌شود. در صورت بروز خطای اعتبارسنجی که باعث اختلال در برنامه می‌شود، برنامه را دوباره راه‌اندازی کنید. این رمز فقط برای مراحلی که به دسترسی مدیر نیاز دارند (تنظیم یا پاک کردن پروکسی سیستم، حالت TUN) به کار می‌رود، ذخیره نمی‌شود و در هر اجرا حداکثر یک بار خواسته می‌شود.</value>
+  </data>
+  <data name="TbSettingsMacLoginPassword" xml:space="preserve">
+    <value>رمز عبور قفل صفحه</value>
   </data>
   <data name="TransportHeaderType5" xml:space="preserve">
     <value>حالت xhttp</value>

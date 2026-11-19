@@ -885,6 +885,15 @@
   <data name="LvTestSpeed" xml:space="preserve">
     <value>Kecepatan (MB/s)</value>
   </data>
+  <data name="LvExpireDate" xml:space="preserve">
+    <value>Masa berlaku</value>
+  </data>
+  <data name="TipUnlimitedTime" xml:space="preserve">
+    <value>Tidak terbatas</value>
+  </data>
+  <data name="LvTrafficLimit" xml:space="preserve">
+    <value>Lalu lintas / Batas</value>
+  </data>
   <data name="FailedToRunCore" xml:space="preserve">
     <value>Gagal menjalankan Core, silakan periksa pesan yang ditampilkan</value>
   </data>
@@ -1345,7 +1354,10 @@
     <value>Kata sandi sudo sistem</value>
   </data>
   <data name="TbSettingsLinuxSudoPasswordTip" xml:space="preserve">
-    <value>Kata sandi akan divalidasi melalui baris perintah. Jika kesalahan validasi menyebabkan aplikasi bermasalah, mulai ulang aplikasi. Kata sandi tidak disimpan dan harus dimasukkan lagi setelah setiap mulai ulang.</value>
+    <value>Kata sandi akan divalidasi melalui baris perintah. Jika kesalahan validasi menyebabkan aplikasi bermasalah, mulai ulang aplikasi. Kata sandi hanya dipakai untuk langkah yang memerlukan hak administrator (mengatur atau menghapus proksi sistem, mode TUN), tidak disimpan, dan hanya diminta sekali per kali menjalankan.</value>
+  </data>
+  <data name="TbSettingsMacLoginPassword" xml:space="preserve">
+    <value>Kata sandi layar kunci</value>
   </data>
   <data name="TransportHeaderType5" xml:space="preserve">
     <value>Mode xhttp</value>

@@ -290,6 +290,62 @@
                         ExName="Remarks"
                         Header="{x:Static resx:ResUI.LvRemarks}" />
                     <base:MyDGTextColumn
+                        x:Name="colExpireDate"
+                        Width="100"
+                        Binding="{Binding ExpireDate}"
+                        ExName="ExpireDate"
+                        Header="{x:Static resx:ResUI.LvExpireDate}">
+                        <base:MyDGTextColumn.CellStyle>
+                            <Style BasedOn="{StaticResource MaterialDesignDataGridCell}" TargetType="DataGridCell">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource MaterialDesign.Brush.Primary.Light}" />
+                                        <Setter Property="Foreground" Value="Black" />
+                                        <Setter Property="BorderBrush" Value="{DynamicResource MaterialDesign.Brush.Primary.Light}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding ExpireLevel}" Value="1">
+                                        <Setter Property="Background" Value="#FFD600" />
+                                        <Setter Property="Foreground" Value="Black" />
+                                        <Setter Property="BorderBrush" Value="#FFD600" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding ExpireLevel}" Value="2">
+                                        <Setter Property="Background" Value="#E53935" />
+                                        <Setter Property="Foreground" Value="White" />
+                                        <Setter Property="BorderBrush" Value="#E53935" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </base:MyDGTextColumn.CellStyle>
+                    </base:MyDGTextColumn>
+                    <base:MyDGTextColumn
+                        x:Name="colTrafficInfo"
+                        Width="120"
+                        Binding="{Binding TrafficInfo}"
+                        ExName="TrafficInfo"
+                        Header="{x:Static resx:ResUI.LvTrafficLimit}">
+                        <base:MyDGTextColumn.CellStyle>
+                            <Style BasedOn="{StaticResource MaterialDesignDataGridCell}" TargetType="DataGridCell">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource MaterialDesign.Brush.Primary.Light}" />
+                                        <Setter Property="Foreground" Value="Black" />
+                                        <Setter Property="BorderBrush" Value="{DynamicResource MaterialDesign.Brush.Primary.Light}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding TrafficLevel}" Value="1">
+                                        <Setter Property="Background" Value="#FFD600" />
+                                        <Setter Property="Foreground" Value="Black" />
+                                        <Setter Property="BorderBrush" Value="#FFD600" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding TrafficLevel}" Value="2">
+                                        <Setter Property="Background" Value="#E53935" />
+                                        <Setter Property="Foreground" Value="White" />
+                                        <Setter Property="BorderBrush" Value="#E53935" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </base:MyDGTextColumn.CellStyle>
+                    </base:MyDGTextColumn>
+                    <base:MyDGTextColumn
                         Width="120"
                         Binding="{Binding Address}"
                         ExName="Address"

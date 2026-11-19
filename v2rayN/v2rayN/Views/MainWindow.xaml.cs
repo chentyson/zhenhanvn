@@ -109,7 +109,7 @@ public partial class MainWindow
 
             ViewModel.BrowseImageFileInteraction.RegisterHandler(interaction =>
             {
-                if (UI.OpenFileDialog(out var fileName, "PNG|*.png|All|*.*") != true)
+                if (UI.OpenFileDialog(out var fileName, "Image|*.png;*.jpg;*.jpeg;*.bmp;*.webp;*.gif|PNG|*.png|All|*.*") != true)
                 {
                     interaction.SetOutput(null);
                     return;

@@ -11,4 +11,9 @@ public class ProfileExItem
     public int Sort { get; set; }
     public string? Message { get; set; }
     public string? IpInfo { get; set; }
+    public long ExpireTime { get; set; }
+    public string? ExpireDate { get; set; }
+    public string? TrafficInfo { get; set; }
+    public long TrafficVolume { get; set; }
+    public long TrafficUsed { get; set; }
 }

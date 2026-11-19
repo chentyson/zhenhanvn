@@ -885,6 +885,15 @@
   <data name="LvTestSpeed" xml:space="preserve">
     <value>Vitesse (Mo/s)</value>
   </data>
+  <data name="LvExpireDate" xml:space="preserve">
+    <value>Expiration</value>
+  </data>
+  <data name="TipUnlimitedTime" xml:space="preserve">
+    <value>Illimité</value>
+  </data>
+  <data name="LvTrafficLimit" xml:space="preserve">
+    <value>Trafic / Limite</value>
+  </data>
   <data name="FailedToRunCore" xml:space="preserve">
     <value>Échec d’exécution du Core, veuillez consulter les messages</value>
   </data>
@@ -1342,8 +1351,11 @@
     <value>Mot de passe sudo système</value>
   </data>
   <data name="TbSettingsLinuxSudoPasswordTip" xml:space="preserve">
-    <value>Le mot de passe sera vérifié en ligne de commande. En cas d’échec ou de dysfonctionnement, redémarrez l’application. Il n’est pas stocké et doit être saisi à chaque redémarrage.</value>
+    <value>Le mot de passe sera vérifié en ligne de commande. En cas d’échec ou de dysfonctionnement, redémarrez l’application. Il n’est utilisé que pour les opérations nécessitant des droits d’administrateur (définition ou suppression du proxy système, mode TUN), n’est pas stocké et n’est demandé qu’une seule fois par exécution.</value>
     </data>
+  <data name="TbSettingsMacLoginPassword" xml:space="preserve">
+    <value>Mot de passe de verrouillage de l'écran</value>
+  </data>
   <data name="TransportHeaderType5" xml:space="preserve">
     <value>Mode XHTTP</value>
   </data>

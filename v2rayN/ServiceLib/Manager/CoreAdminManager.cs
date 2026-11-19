@@ -33,18 +33,32 @@ public class CoreAdminManager
     {
         StringBuilder sb = new();
         sb.AppendLine("#!/bin/bash");
+
+        // The first line of stdin carries the password the app is holding (see ProcessService).
+        // When the app holds none, sudo still gets a chance with -n: a valid sudo timestamp or a
+        // NOPASSWD sudoers entry starts the core without asking the user anything.
+        sb.AppendLine("SUDO_PWD=\"\"");
+        sb.AppendLine("IFS= read -r SUDO_PWD || true");
+        sb.AppendLine("if [ -n \"$SUDO_PWD\" ]; then");
+
         var cmdLine = $"{fileName.AppendQuotes()} {string.Format(coreInfo.Arguments, Utils.GetBinConfigPath(configPath).AppendQuotes())}";
 
         // Passing environment variables to the sudo command, here it only xray or sing-box.
         if (coreInfo.Environment.Count > 0)
         {
             var envArgs = string.Join(" ", coreInfo.Environment.Where(kv => kv.Value.IsNotEmpty()).Select(kv => $"{kv.Key}={kv.Value.AppendQuotes()}"));
-            sb.AppendLine($"exec sudo -S -- env {envArgs} {cmdLine}");
+            sb.AppendLine($"    printf '%s\\n' \"$SUDO_PWD\" | sudo -S -- env {envArgs} {cmdLine}");
+            sb.AppendLine("else");
+            sb.AppendLine($"    exec sudo -n -- env {envArgs} {cmdLine}");
         }
         else
         {
-            sb.AppendLine($"exec sudo -S -- {cmdLine}");
+            sb.AppendLine($"    printf '%s\\n' \"$SUDO_PWD\" | sudo -S -- {cmdLine}");
+            sb.AppendLine("else");
+            sb.AppendLine($"    exec sudo -n -- {cmdLine}");
         }
+
+        sb.AppendLine("fi");
 
         var shFilePath = await FileUtils.CreateLinuxShellFile("run_as_sudo.sh", sb.ToString(), true);
 
@@ -84,11 +98,20 @@ public class CoreAdminManager
             {
                 shFilePath = shFilePath.AppendQuotes();
             }
-            var arg = new List<string>() { "-c", $"sudo -S {shFilePath} {_linuxSudoPid}" };
-            var result = await Cli.Wrap(Global.LinuxBash)
-                .WithArguments(arg)
-                .WithStandardInputPipe(PipeSource.FromString(AppManager.Instance.LinuxSudoPwd))
-                .ExecuteBufferedAsync();
+            var arg = new List<string>() { "-c", $"sudo {(AppManager.Instance.LinuxSudoPwd.IsNotEmpty() ? "-S" : "-n")} {shFilePath} {_linuxSudoPid}" };
+            var command = Cli.Wrap(Global.LinuxBash).WithArguments(arg);
+            if (AppManager.Instance.LinuxSudoPwd.IsNotEmpty())
+            {
+                command = command.WithStandardInputPipe(PipeSource.FromString(AppManager.Instance.LinuxSudoPwd));
+            }
+            else
+            {
+                // No password in this session (passwordless sudo, or the core was started while the
+                // sudo timestamp was still valid): let sudo use that credential instead of prompting.
+                Logging.SaveLog($"{_tag}: no stored sudo password, killing the core with sudo -n");
+            }
+
+            var result = await command.ExecuteBufferedAsync();
 
             await UpdateFunc(false, result.StandardOutput.ToString());
 

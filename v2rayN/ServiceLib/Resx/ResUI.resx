@@ -289,7 +289,7 @@
     <value>{0} Configurations have been imported from clipboard</value>
   </data>
   <data name="SuccessfullyImportedServerViaScan" xml:space="preserve">
-    <value>Successfully scanned and imported the shared link</value>
+    <value>{0} Configurations have been imported from scan</value>
   </data>
   <data name="TestMeOutput" xml:space="preserve">
     <value>The delay: {0} ms, {1}</value>
@@ -888,6 +888,18 @@
   <data name="LvTestSpeed" xml:space="preserve">
     <value>Speed (MB/s)</value>
   </data>
+  <data name="LvExpireDate" xml:space="preserve">
+    <value>Expire</value>
+  </data>
+  <data name="TipUnlimitedTime" xml:space="preserve">
+    <value>Unlimited</value>
+  </data>
+  <data name="LvTrafficLimit" xml:space="preserve">
+    <value>Traffic / Limit</value>
+  </data>
+  <data name="MsgExpiredRenew" xml:space="preserve">
+    <value>The node "{0}" you are using has expired. Renew it now?</value>
+  </data>
   <data name="FailedToRunCore" xml:space="preserve">
     <value>Failed to run Core, please check the prompt information</value>
   </data>
@@ -1363,7 +1375,10 @@
     <value>System sudo password</value>
   </data>
   <data name="TbSettingsLinuxSudoPasswordTip" xml:space="preserve">
-    <value>The password will be validated via the command line. If a validation error causes the application to malfunction, please restart the application. The password will not be stored and must be entered again after each restart.</value>
+    <value>The password will be validated via the command line. If a validation error causes the application to malfunction, please restart the application. It is only used for the steps that need administrator rights (setting or clearing the system proxy, TUN mode), is never stored, and is asked for at most once per run.</value>
+  </data>
+  <data name="TbSettingsMacLoginPassword" xml:space="preserve">
+    <value>Screen lock password</value>
   </data>
   <data name="TransportHeaderType5" xml:space="preserve">
     <value>xhttp mode</value>

@@ -241,11 +241,18 @@ public static class FileUtils
         // Check if the file already exists and if we should overwrite it
         if (!overwrite && File.Exists(shFilePath))
         {
+            // A cached file may come from an older version or from an update tool that dropped
+            // the executable bit (zip/ditto copies), which makes every later run fail with EACCES.
+            // Re-arm the exec bit here instead of only when the file is created.
+            await Utils.SetLinuxChmod(shFilePath);
             return shFilePath;
         }
 
         File.Delete(shFilePath);
-        await File.WriteAllTextAsync(shFilePath, contents);
+        // These scripts run under /bin/bash; a checkout with core.autocrlf can hand us CRLF text,
+        // which bash on macOS/Linux reports as "command not found" style errors. Force LF here so
+        // the build machine's line-ending settings cannot break the script.
+        await File.WriteAllTextAsync(shFilePath, contents.Replace("\r\n", "\n").Replace("\r", "\n"));
         await Utils.SetLinuxChmod(shFilePath);
 
         return shFilePath;

@@ -301,6 +301,95 @@ public partial class ProfilesViewModel : MyReactiveObject
         await Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Queries the s-ui ZY4 account query service for the currently active node
+    /// only and fills in its expiry / traffic columns. Other nodes in the list are
+    /// not queried. Runs in the background and fails silently (a node without the
+    /// endpoint simply stays as it was).
+    /// </summary>
+    public async Task QueryAccountExpiry()
+    {
+        try
+        {
+            var activeIndexId = _config.IndexId;
+            if (activeIndexId.IsNullOrEmpty())
+            {
+                return;
+            }
+
+            var node = await AppManager.Instance.GetProfileItem(activeIndexId);
+            if (node is null)
+            {
+                return;
+            }
+
+            var data = await AccountQueryService.QueryNodeAsync(node);
+            if (data is null)
+            {
+                // Never overwrite previously stored values with a failed query.
+                return;
+            }
+
+            var expireDate = AccountQueryService.FormatExpireDate(data) ?? "-";
+            var trafficInfo = AccountQueryService.FormatTraffic(data);
+            var expireLevel = AccountQueryService.GetExpireLevel(data.expiry);
+            var trafficVolume = data.unlimited_traffic ? 0 : data.volume;
+            var trafficUsed = data.unlimited_traffic ? 0 : data.used;
+            var trafficLevel = AccountQueryService.GetTrafficLevel(trafficVolume, trafficUsed);
+
+            ProfileExManager.Instance.SetAccountInfo(node.IndexId, data.expiry, expireDate, trafficInfo, trafficVolume, trafficUsed);
+            await ProfileExManager.Instance.SaveTo();
+
+            RxSchedulers.MainThreadScheduler.Schedule(() =>
+            {
+                var item = ProfileItems.FirstOrDefault(it => it.IndexId == node.IndexId);
+                if (item != null)
+                {
+                    item.ExpireDate = expireDate;
+                    item.ExpireLevel = expireLevel;
+                    item.TrafficInfo = trafficInfo;
+                    item.TrafficLevel = trafficLevel;
+                }
+            });
+
+            // The queried node is always the active one, and this query runs
+            // only when the service is (re)started — node activation or the
+            // "重启服务" reload. If the account has already expired, ask on
+            // every such restart whether to open the renewal page.
+            if (AccountQueryService.IsAlreadyExpired(data.expiry))
+            {
+                RxSchedulers.MainThreadScheduler.Schedule(() => _ = ShowExpiredRenewPrompt(node));
+            }
+        }
+        catch
+        {
+            // Silent: the active node may not expose the query endpoint.
+        }
+    }
+
+    /// <summary>
+    /// Asks whether the expired active node should be renewed; on yes, opens
+    /// the customer service page (https://cs.boosoo.cn/?input=续费&lt;别名&gt;) in the default browser.
+    /// </summary>
+    private async Task ShowExpiredRenewPrompt(ProfileItem node)
+    {
+        try
+        {
+            var confirmed = await ShowYesNoInteraction.HandleSafe(string.Format(ResUI.MsgExpiredRenew, node.Remarks));
+            if (!confirmed)
+            {
+                return;
+            }
+
+            var url = $"{Global.AccountRenewUrl}{Utils.UrlEncode($"{Global.AccountRenewKeyword}{node.Remarks}")}";
+            Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("ExpiredRenewPrompt", ex);
+        }
+    }
+
     public async Task UpdateStatistics(ServerSpeedItem update)
     {
         if (!_config.GuiItem.EnableStatistics
@@ -427,6 +516,10 @@ public partial class ProfilesViewModel : MyReactiveObject
                         DelayVal = t33?.Delay != 0 ? $"{t33?.Delay}" : string.Empty,
                         SpeedVal = t33?.Speed > 0 ? $"{t33?.Speed}" : t33?.Message ?? string.Empty,
                         IpInfo = t33?.IpInfo ?? string.Empty,
+                        ExpireDate = t33?.ExpireDate ?? string.Empty,
+                        ExpireLevel = AccountQueryService.GetExpireLevel(t33?.ExpireTime ?? 0),
+                        TrafficInfo = t33?.TrafficInfo ?? string.Empty,
+                        TrafficLevel = AccountQueryService.GetTrafficLevel(t33?.TrafficVolume ?? 0, t33?.TrafficUsed ?? 0),
                         TodayDown = t22 == null ? "" : Utils.HumanFy(t22.TodayDown),
                         TodayUp = t22 == null ? "" : Utils.HumanFy(t22.TodayUp),
                         TotalDown = t22 == null ? "" : Utils.HumanFy(t22.TotalDown),

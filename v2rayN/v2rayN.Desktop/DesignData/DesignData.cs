@@ -74,6 +74,7 @@ public static class DesignData
         vm.InboundLanDisplay = "http:10809";
         vm.RunningServerDisplay = "🚀 Design Server (Active)";
         vm.RunningInfoDisplay = "v2rayN Design Mode";
+        vm.CurrentDelay = 123;
         vm.SpeedProxyDisplay = "↑ 1.2 MB/s";
         vm.SpeedDirectDisplay = "↓ 5.6 MB/s";
         vm.RoutingItems.Add(new RoutingItem { Remarks = "Default Routing" });

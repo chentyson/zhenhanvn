@@ -30,6 +30,26 @@ public partial class ProfileItemModel : ReactiveObject
     public partial string IpInfo { get; set; }
 
     [Reactive]
+    public partial string ExpireDate { get; set; }
+
+    /// <summary>
+    /// Expiry warning level: 0 = default, 1 = expires within one month (yellow),
+    /// 2 = expires today or already expired (red).
+    /// </summary>
+    [Reactive]
+    public partial int ExpireLevel { get; set; }
+
+    [Reactive]
+    public partial string TrafficInfo { get; set; }
+
+    /// <summary>
+    /// Traffic warning level (remaining / limit): 0 = default,
+    /// 1 = remaining below 20% (yellow), 2 = remaining at or below 1% (red).
+    /// </summary>
+    [Reactive]
+    public partial int TrafficLevel { get; set; }
+
+    [Reactive]
     public partial string TodayUp { get; set; }
 
     [Reactive]

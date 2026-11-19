@@ -16,6 +16,8 @@
     mc:Ignorable="d">
     <UserControl.Resources>
         <conv:DelayColorConverter x:Key="DelayColorConverter" />
+        <conv:WarningLevelBackgroundConverter x:Key="WarningLevelBackgroundConverter" />
+        <conv:WarningLevelForegroundConverter x:Key="WarningLevelForegroundConverter" />
     </UserControl.Resources>
     <Grid>
         <DockPanel>
@@ -231,6 +233,41 @@
                                         VerticalAlignment="Center"
                                         Text="{Binding Remarks}" />
                                 </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn SortMemberPath="ExpireDate" Tag="ExpireDate">
+                        <DataGridTemplateColumn.Header>
+                            <TextBlock Text="{x:Static resx:ResUI.LvExpireDate}" />
+                        </DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Background="{Binding ExpireLevel, Converter={StaticResource WarningLevelBackgroundConverter}}">
+                                    <TextBlock
+                                        Margin="{StaticResource MarginLr8}"
+                                        VerticalAlignment="Center"
+                                        Foreground="{Binding ExpireLevel, Converter={StaticResource WarningLevelForegroundConverter}}"
+                                        Text="{Binding ExpireDate}" />
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn SortMemberPath="TrafficInfo" Tag="TrafficInfo">
+                        <DataGridTemplateColumn.Header>
+                            <TextBlock Text="{x:Static resx:ResUI.LvTrafficLimit}" />
+                        </DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border
+                                    Width="120"
+                                    Background="{Binding TrafficLevel, Converter={StaticResource WarningLevelBackgroundConverter}}">
+                                    <TextBlock
+                                        Margin="{StaticResource MarginLr8}"
+                                        VerticalAlignment="Center"
+                                        Foreground="{Binding TrafficLevel, Converter={StaticResource WarningLevelForegroundConverter}}"
+                                        Text="{Binding TrafficInfo}" />
+                                </Border>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>

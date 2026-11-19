@@ -9,6 +9,13 @@ public partial class SudoPasswordInputView : UserControl
     {
         InitializeComponent();
 
+        // On macOS the sudo password is the account password, i.e. the one used to unlock the screen,
+        // so the prompt says "screen lock password". Linux keeps the "system sudo password" wording.
+        if (Utils.IsMacOS())
+        {
+            lblPassword.Text = ResUI.TbSettingsMacLoginPassword;
+        }
+
         Loaded += (s, e) => txtPassword.Focus();
 
         btnSave.Click += async (_, _) => await SavePasswordAsync();

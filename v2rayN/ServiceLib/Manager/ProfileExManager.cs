@@ -25,9 +25,64 @@ public class ProfileExManager
 
     private async Task InitData()
     {
+        await MigrateSchema();
         await SQLiteHelper.Instance.ExecuteAsync($"delete from ProfileExItem where indexId not in ( select indexId from ProfileItem )");
 
         _lstProfileEx = new(await SQLiteHelper.Instance.TableAsync<ProfileExItem>().ToListAsync());
+    }
+
+    /// <summary>
+    /// Adds columns that may be missing from an existing ProfileExItem table.
+    /// The codebase has no migration framework, so this is an idempotent
+    /// pragma_table_info check followed by ALTER TABLE ADD COLUMN.
+    /// </summary>
+    private async Task MigrateSchema()
+    {
+        try
+        {
+            var columns = await SQLiteHelper.Instance.QueryAsync<ColumnInfo>(
+                "SELECT name FROM pragma_table_info('ProfileExItem')");
+            var existing = new HashSet<string>(columns.Select(c => c.name), StringComparer.OrdinalIgnoreCase);
+
+            if (!existing.Contains("ExpireTime"))
+            {
+                await SQLiteHelper.Instance.ExecuteAsync(
+                    "ALTER TABLE ProfileExItem ADD COLUMN ExpireTime INTEGER DEFAULT 0");
+            }
+
+            if (!existing.Contains("ExpireDate"))
+            {
+                await SQLiteHelper.Instance.ExecuteAsync(
+                    "ALTER TABLE ProfileExItem ADD COLUMN ExpireDate TEXT DEFAULT ''");
+            }
+
+            if (!existing.Contains("TrafficInfo"))
+            {
+                await SQLiteHelper.Instance.ExecuteAsync(
+                    "ALTER TABLE ProfileExItem ADD COLUMN TrafficInfo TEXT DEFAULT ''");
+            }
+
+            if (!existing.Contains("TrafficVolume"))
+            {
+                await SQLiteHelper.Instance.ExecuteAsync(
+                    "ALTER TABLE ProfileExItem ADD COLUMN TrafficVolume INTEGER DEFAULT 0");
+            }
+
+            if (!existing.Contains("TrafficUsed"))
+            {
+                await SQLiteHelper.Instance.ExecuteAsync(
+                    "ALTER TABLE ProfileExItem ADD COLUMN TrafficUsed INTEGER DEFAULT 0");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog(_tag, ex);
+        }
+    }
+
+    private sealed class ColumnInfo
+    {
+        public string name { get; set; } = "";
     }
 
     private void IndexIdEnqueue(string indexId)
@@ -153,6 +208,18 @@ public class ProfileExManager
         var profileEx = GetProfileExItem(indexId);
 
         profileEx.IpInfo = ipInfo;
+        IndexIdEnqueue(indexId);
+    }
+
+    public void SetAccountInfo(string indexId, long expireTime, string expireDate, string trafficInfo, long trafficVolume, long trafficUsed)
+    {
+        var profileEx = GetProfileExItem(indexId);
+
+        profileEx.ExpireTime = expireTime;
+        profileEx.ExpireDate = expireDate;
+        profileEx.TrafficInfo = trafficInfo;
+        profileEx.TrafficVolume = trafficVolume;
+        profileEx.TrafficUsed = trafficUsed;
         IndexIdEnqueue(indexId);
     }
 

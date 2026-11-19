@@ -32,20 +32,22 @@ public partial class QRCodeAvaloniaUtils
 
         try
         {
-            var workArea = new RECT();
-            SystemParametersInfo(SPI_GETWORKAREA, 0, ref workArea, 0);
-
-            var left = workArea.Left;
-            var top = workArea.Top;
-            var width = workArea.Right - workArea.Left;
-            var height = workArea.Bottom - workArea.Top;
+            // Capture the entire virtual screen (all monitors) so a QR code can be
+            // displayed anywhere on any display.
+            var left = GetSystemMetrics(SM_XVIRTUALSCREEN);
+            var top = GetSystemMetrics(SM_YVIRTUALSCREEN);
+            var width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+            var height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
             if (width <= 0 || height <= 0)
             {
-                left = 0;
-                top = 0;
-                width = GetSystemMetrics(0);
-                height = GetSystemMetrics(1);
+                // Fallback to the primary work area.
+                var workArea = new RECT();
+                SystemParametersInfo(SPI_GETWORKAREA, 0, ref workArea, 0);
+                left = workArea.Left;
+                top = workArea.Top;
+                width = workArea.Right - workArea.Left;
+                height = workArea.Bottom - workArea.Top;
             }
 
             hdcScreen = GetDC(IntPtr.Zero);
@@ -160,6 +162,11 @@ public partial class QRCodeAvaloniaUtils
     private static partial bool SystemParametersInfo(int uiAction, int uiParam, ref RECT pvParam, int fWinIni);
 
     private const int SPI_GETWORKAREA = 0x0030;
+
+    private const int SM_XVIRTUALSCREEN = 76;
+    private const int SM_YVIRTUALSCREEN = 77;
+    private const int SM_CXVIRTUALSCREEN = 78;
+    private const int SM_CYVIRTUALSCREEN = 79;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT

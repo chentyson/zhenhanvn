@@ -43,11 +43,20 @@ public partial class StatusBarView : ReactiveUserControl<StatusBarViewModel>
                 interaction.SetOutput(result);
             }).DisposeWith(disposables);
 
+            // The sudo prompt handler above only exists while this view is activated, so let the
+            // system proxy code know it is safe to prompt, and apply the configured system proxy
+            // here (the VM is created before MainWindow, so prompting straight from its constructor
+            // would find no handler and leave the system proxy unset with no visible reason).
+            ViewModel.MarkProxyPromptReady();
+
             ViewModel.DispatcherRefreshIconInteraction.RegisterHandler(interaction =>
             {
                 Dispatcher.UIThread.Post(RefreshIcon, DispatcherPriority.Default);
                 interaction.SetOutput(RxVoid.Default);
             }).DisposeWith(disposables);
+
+            // Registered last of the handlers so the proxy apply can use all of them.
+            _ = ViewModel.InitialSystemProxyApply();
         });
 
         //spEnableTun.IsVisible = (Utils.IsWindows() || AppHandler.Instance.IsAdministrator);
@@ -73,6 +82,23 @@ public partial class StatusBarView : ReactiveUserControl<StatusBarViewModel>
     }
 
     private async Task<string?> PasswordInputAsync()
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            // Can be reached from a thread-pool thread (MainWindowViewModel.Reload wraps
+            // UpdateSysProxy in Task.Run). DialogHost and the controls below require the UI thread,
+            // and an exception here is swallowed by HandleSafe, which then looks like
+            // "no password was provided" with the system proxy silently left unset.
+            Task<string?>? inner = null;
+            var operation = Dispatcher.UIThread.InvokeAsync(() => inner = PasswordInputAsyncCore());
+            await operation;
+            return await (inner ?? Task.FromResult<string?>(null));
+        }
+
+        return await PasswordInputAsyncCore();
+    }
+
+    private async Task<string?> PasswordInputAsyncCore()
     {
         var dialog = new SudoPasswordInputView();
         var obj = await DialogHost.Show(dialog);

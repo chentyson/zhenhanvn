@@ -888,6 +888,18 @@
   <data name="LvTestSpeed" xml:space="preserve">
     <value>速度 (MB/s)</value>
   </data>
+  <data name="LvExpireDate" xml:space="preserve">
+    <value>到期</value>
+  </data>
+  <data name="TipUnlimitedTime" xml:space="preserve">
+    <value>永不过期</value>
+  </data>
+  <data name="LvTrafficLimit" xml:space="preserve">
+    <value>流量/限额</value>
+  </data>
+  <data name="MsgExpiredRenew" xml:space="preserve">
+    <value>您使用的 {0} 已过期，是否现在续费？</value>
+  </data>
   <data name="FailedToRunCore" xml:space="preserve">
     <value>运行 Core 失败，请查看提示信息</value>
   </data>
@@ -1351,7 +1363,10 @@
     <value>系统的 sudo 密码</value>
   </data>
   <data name="TbSettingsLinuxSudoPasswordTip" xml:space="preserve">
-    <value>密码将调用命令行校验，如果因为校验错误导致无法正常运行时，请重启本应用。 密码不会存储，每次重启后都需要再次输入。</value>
+    <value>密码将调用命令行校验，如果因为校验错误导致无法正常运行时，请重启本应用。密码仅在需要管理员权限的环节（设置或清除系统代理、TUN 模式）使用，不会存储，每次运行最多询问一次。</value>
+  </data>
+  <data name="TbSettingsMacLoginPassword" xml:space="preserve">
+    <value>输入锁屏密码</value>
   </data>
   <data name="TransportHeaderType5" xml:space="preserve">
     <value>XHTTP 模式</value>

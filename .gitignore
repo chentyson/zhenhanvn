@@ -409,3 +409,17 @@ zhenhanvn-windows-64.zip
 
 # Local GitHub token for publish-github.ps1 (never commit)
 .github-token
+
+# Local build/packaging artifacts and temporary snapshots
+/dmg-build/
+/build_output.txt
+/desktop.ini
+/pubnumber.png
+launcher/app.zip
+launcher-go/app.zip
+zhdata-tunnel/
+/zt0117/
+zt0117/dist/
+zt0117/*.exe
+zt0117/*.err
+zt0117/rawout.txt

@@ -4,7 +4,11 @@ public static class SysProxyHandler
 {
     private static readonly string _tag = "SysProxyHandler";
 
-    public static async Task<bool> UpdateSysProxy(Config config, bool forceDisable)
+    /// <param name="allowPasswordPrompt">
+    /// False on the shutdown path: applying or clearing the system proxy can need the macOS
+    /// administrator password, and no modal dialog may be raised while the app is closing.
+    /// </param>
+    public static async Task<bool> UpdateSysProxy(Config config, bool forceDisable, bool allowPasswordPrompt = true)
     {
         var type = config.SystemProxyItem.SysProxyType;
 
@@ -20,6 +24,10 @@ public static class SysProxyHandler
             {
                 return false;
             }
+            // The macOS path is the only one that can fail without throwing (it needs an
+            // administrator password and shells out to networksetup), so its real outcome is
+            // propagated instead of always reporting success to the UI.
+            var applied = true;
             switch (type)
             {
                 case ESysProxyType.ForcedChange when Utils.IsWindows():
@@ -34,7 +42,7 @@ public static class SysProxyHandler
 
                 case ESysProxyType.ForcedChange when Utils.IsMacOS():
                     var exceptions2 = SanitizeExceptions(config);
-                    await ProxySettingOSX.SetProxy(Global.Loopback, port, exceptions2);
+                    applied = await ProxySettingOSX.SetProxy(Global.Loopback, port, exceptions2, allowPasswordPrompt);
                     break;
 
                 case ESysProxyType.ForcedClear when Utils.IsWindows():
@@ -46,7 +54,7 @@ public static class SysProxyHandler
                     break;
 
                 case ESysProxyType.ForcedClear when Utils.IsMacOS():
-                    await ProxySettingOSX.UnsetProxy();
+                    applied = await ProxySettingOSX.UnsetProxy(allowPasswordPrompt);
                     break;
 
                 case ESysProxyType.Pac when Utils.IsWindows():
@@ -58,12 +66,14 @@ public static class SysProxyHandler
             {
                 PacManager.Instance.Stop();
             }
+
+            return applied;
         }
         catch (Exception ex)
         {
             Logging.SaveLog(_tag, ex);
         }
-        return true;
+        return false;
     }
 
     private static string SanitizeExceptions(Config config)

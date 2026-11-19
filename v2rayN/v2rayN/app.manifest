@@ -8,6 +8,12 @@
 			</requestedPrivileges>
 		</security>
 	</trustInfo>
+	<!-- Per-Monitor V2 DPI awareness: crisp UI and full-resolution screen captures on high-DPI displays -->
+	<application xmlns="urn:schemas-microsoft-com:asm.v3">
+		<windowsSettings>
+			<dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2, PerMonitor, System</dpiAwareness>
+		</windowsSettings>
+	</application>
 	<!-- Enable themes for Windows common controls and dialogs (Windows XP and later) -->
 	<dependency>
 		<dependentAssembly>

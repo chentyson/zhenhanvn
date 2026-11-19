@@ -1014,10 +1014,26 @@ public class Utils
 
     public static async Task<string?> GetCliWrapOutput(string filePath, string? arg)
     {
-        return await GetCliWrapOutput(filePath, arg != null ? new List<string>() { arg } : null);
+        var result = await GetCliWrapResult(filePath, arg != null ? new List<string>() { arg } : null);
+        return result.IsSuccess ? result.StandardOutput : null;
     }
 
     public static async Task<string?> GetCliWrapOutput(string filePath, IEnumerable<string>? args, string? stdin = null)
+    {
+        var result = await GetCliWrapResult(filePath, args, stdin);
+        return result.IsSuccess ? result.StandardOutput : null;
+    }
+
+    /// <summary>
+    /// Runs a command and returns exit code, stdout and stderr. Unlike
+    /// <see cref="GetCliWrapOutput" /> the caller can tell "ran and failed" from "could not run",
+    /// which is what the system proxy path needs to report a real reason to the user.
+    /// </summary>
+    /// <param name="logStandardErrorOnSuccess">
+    /// Some failures exit with code 0 while still writing to stderr (a stale sudo-less proxy
+    /// script is the typical case), so callers may ask for that stderr to be logged too.
+    /// </param>
+    public static async Task<CliRunResult> GetCliWrapResult(string filePath, IEnumerable<string>? args, string? stdin = null, bool logStandardErrorOnSuccess = false)
     {
         try
         {
@@ -1040,19 +1056,36 @@ public class Utils
             }
 
             var result = await cmd.ExecuteBufferedAsync();
-            if (result.IsSuccess)
+            var runResult = new CliRunResult
             {
-                return result.StandardOutput ?? "";
+                Executed = true,
+                IsSuccess = result.IsSuccess,
+                ExitCode = result.ExitCode,
+                StandardOutput = result.StandardOutput ?? string.Empty,
+                StandardError = result.StandardError ?? string.Empty,
+            };
+
+            if (runResult.IsSuccess)
+            {
+                if (logStandardErrorOnSuccess && runResult.StandardError.IsNotEmpty())
+                {
+                    Logging.SaveLog($"{_tag}: \"{filePath}\" exited 0 but wrote to stderr: {runResult.StandardError.Trim()}");
+                }
+
+                return runResult;
             }
 
-            Logging.SaveLog(result.ToString() ?? "");
+            // CliWrap 3.10.5 has no ToString override on its result types, so the previous
+            // SaveLog(result.ToString()) only ever wrote the type name: no exit code, no stderr.
+            Logging.SaveLogError($"{_tag}: \"{filePath}\" exited with code {runResult.ExitCode}, standard error: {runResult.StandardError}");
+            return runResult;
         }
         catch (Exception ex)
         {
-            Logging.SaveLog("GetCliWrapOutput", ex);
+            Logging.SaveLog("GetCliWrapResult", ex);
         }
 
-        return null;
+        return new CliRunResult { Executed = false };
     }
 
     #endregion Miscellaneous
@@ -1470,4 +1503,37 @@ public class Utils
     }
 
     #endregion Platform
+}
+
+/// <summary>
+/// Outcome of a command executed through <see cref="Utils.GetCliWrapResult" />.
+/// </summary>
+public sealed class CliRunResult
+{
+    /// <summary>False when the process could not be started or the run threw an exception.</summary>
+    public bool Executed { get; init; }
+
+    public bool IsSuccess { get; init; }
+
+    public int ExitCode { get; init; }
+
+    public string StandardOutput { get; init; } = string.Empty;
+
+    public string StandardError { get; init; } = string.Empty;
+
+    /// <summary>The most useful single-line description of why the run failed, for logs and notices.</summary>
+    public string FailureText()
+    {
+        if (IsSuccess)
+        {
+            return string.Empty;
+        }
+
+        var text = StandardError.IsNotEmpty() ? StandardError
+            : StandardOutput.IsNotEmpty() ? StandardOutput
+            : Executed ? $"exit code {ExitCode}"
+            : "the command could not be started";
+
+        return text.Trim().ReplaceLineBreaks(" | ");
+    }
 }

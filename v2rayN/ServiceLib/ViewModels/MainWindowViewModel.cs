@@ -567,10 +567,10 @@ public partial class MainWindowViewModel : MyReactiveObject
     public async Task AddServerViaImageAsync()
     {
         var imageFileName = await BrowseImageFileInteraction.HandleSafe(RxVoid.Default);
-        await AddScanResultAsync(imageFileName);
+        await ScanImageResult(imageFileName);
     }
 
-    public async Task ScanImageResult(string fileName)
+    public async Task ScanImageResult(string? fileName)
     {
         if (fileName.IsNullOrEmpty())
         {
@@ -594,7 +594,7 @@ public partial class MainWindowViewModel : MyReactiveObject
             {
                 await RefreshSubscriptions();
                 await RefreshServersDispatcherAsync();
-                NoticeManager.Instance.Enqueue(ResUI.SuccessfullyImportedServerViaScan);
+                NoticeManager.Instance.Enqueue(string.Format(ResUI.SuccessfullyImportedServerViaScan, ret));
             }
             else
             {
@@ -731,6 +731,13 @@ public partial class MainWindowViewModel : MyReactiveObject
                 NoticeManager.Instance.Enqueue(ResUI.CheckServerSettings);
                 return;
             }
+            // TUN runs the core as root on macOS/Linux. Settle the sudo credential here - on the UI
+            // thread and before the config is generated - so that the user is asked at most once per
+            // session, and a run without a credential falls back to TUN off instead of a core that
+            // cannot start. Everything below (and the elevation decision in CoreManager) then sees a
+            // config that matches the way the core will be launched.
+            await StatusBarViewModel.Instance.EnsureTunCredentialAsync();
+
             var allResult = await CoreConfigContextBuilder.BuildAll(_config, profileItem);
             if (NoticeManager.Instance.NotifyValidatorResult(allResult.CombinedValidatorResult) && !allResult.Success)
             {
@@ -740,9 +747,18 @@ public partial class MainWindowViewModel : MyReactiveObject
             await Task.Run(async () =>
             {
                 await LoadCore(allResult.MainResult.Context, allResult.PreSocksResult?.Context);
-                await SysProxyHandler.UpdateSysProxy(_config, false);
                 await Task.Delay(1000);
             });
+
+            // Kept on the UI thread (outside Task.Run): on macOS this can raise the sudo password
+            // dialog, and showing it from a thread-pool thread threw and was swallowed, leaving the
+            // system proxy unset while the UI still showed it as enabled.
+            await SysProxyHandler.UpdateSysProxy(_config, false);
+
+            // Fire-and-forget: query account expiry for the active node only.
+            // Runs in the background and fails silently.
+            _ = ProfilesViewModel.QueryAccountExpiry();
+
             RxSchedulers.MainThreadScheduler.Schedule(async () =>
             {
                 var result = await StatusBarViewModel.TestServerAvailability();

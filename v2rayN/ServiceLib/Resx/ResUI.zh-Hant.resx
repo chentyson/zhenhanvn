@@ -888,6 +888,18 @@
   <data name="LvTestSpeed" xml:space="preserve">
     <value>速度 (MB/s)</value>
   </data>
+  <data name="LvExpireDate" xml:space="preserve">
+    <value>到期</value>
+  </data>
+  <data name="TipUnlimitedTime" xml:space="preserve">
+    <value>永不過期</value>
+  </data>
+  <data name="LvTrafficLimit" xml:space="preserve">
+    <value>流量/限額</value>
+  </data>
+  <data name="MsgExpiredRenew" xml:space="preserve">
+    <value>您使用的 {0} 已過期，是否現在續費？</value>
+  </data>
   <data name="FailedToRunCore" xml:space="preserve">
     <value>執行 Core 失敗，請查看提示訊息</value>
   </data>
@@ -1351,7 +1363,10 @@
     <value>系統的 sudo 密碼</value>
   </data>
   <data name="TbSettingsLinuxSudoPasswordTip" xml:space="preserve">
-    <value>密碼將調用命令行校驗，如果因為校驗錯誤導致無法正常運行時，請重啟本應用。密碼不會存儲，每次重啟後都需要再次輸入。</value>
+    <value>密碼將調用命令行校驗，如果因為校驗錯誤導致無法正常運行時，請重啟本應用。密碼僅在需要管理員權限的環節（設定或清除系統代理、TUN 模式）使用，不會存儲，每次運行最多詢問一次。</value>
+  </data>
+  <data name="TbSettingsMacLoginPassword" xml:space="preserve">
+    <value>輸入鎖屏密碼</value>
   </data>
   <data name="TransportHeaderType5" xml:space="preserve">
     <value>xhttp 模式</value>

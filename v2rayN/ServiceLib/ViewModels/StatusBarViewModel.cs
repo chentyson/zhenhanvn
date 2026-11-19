@@ -8,6 +8,19 @@ public partial class StatusBarViewModel : MyReactiveObject
     public EventChannel<bool> SubscriptionsUpdateRequested { get; } = new();
     public EventChannel<bool?> ShowHideWindowRequested { get; } = new();
 
+    /// <summary>
+    /// Set by StatusBarView once its sudo password prompt handler is registered (that happens in
+    /// WhenActivated, i.e. after MainWindow exists, while this VM is created earlier in
+    /// App.axaml.cs). Until then PromptPasswordInteraction has no handler and would be swallowed,
+    /// leaving the system proxy unset with nothing shown to the user.
+    /// </summary>
+    public bool ProxyPromptReady { get; private set; }
+
+    public void MarkProxyPromptReady()
+    {
+        ProxyPromptReady = true;
+    }
+
     private static readonly Lazy<StatusBarViewModel> _instance = new(() => new());
     public static StatusBarViewModel Instance => _instance.Value;
 
@@ -89,6 +102,14 @@ public partial class StatusBarViewModel : MyReactiveObject
     [Reactive]
     public partial string RunningInfoDisplay { get; set; }
 
+    /// <summary>
+    /// The delay (in ms) that RunningInfoDisplay is talking about: -1 when the last availability
+    /// check got no valid answer. Drives the traffic light next to the "current delay" text
+    /// (red: no valid delay, green: under 800 ms, yellow: 800 ms and above).
+    /// </summary>
+    [Reactive]
+    public partial int CurrentDelay { get; set; }
+
     [Reactive]
     public partial string SpeedProxyDisplay { get; set; }
 
@@ -109,16 +130,17 @@ public partial class StatusBarViewModel : MyReactiveObject
         SelectedRouting = new();
         SelectedServer = new();
         RunningServerToolTipText = GetRunningServerToolTipText("-");
+        CurrentDelay = -1;
         BlSystemProxyPacVisible = Utils.IsWindows();
         BlIsNonWindows = Utils.IsNonWindows();
 
-        if (_config.TunModeItem.EnableTun && AllowEnableTun())
+        // TUN is kept as the user left it: on non-Windows it needs a sudo credential, but that is
+        // only asked for when the core is about to be started elevated (see EnsureTunCredentialAsync),
+        // not for every start-up. On Windows a non-administrator session cannot run TUN at all.
+        EnableTun = _config.TunModeItem.EnableTun && (!Utils.IsWindows() || Utils.IsAdministrator());
+        if (!EnableTun)
         {
-            EnableTun = true;
-        }
-        else
-        {
-            _config.TunModeItem.EnableTun = EnableTun = false;
+            _config.TunModeItem.EnableTun = false;
         }
 
         #region WhenAnyValue && ReactiveCommand
@@ -214,14 +236,45 @@ public partial class StatusBarViewModel : MyReactiveObject
         _ = Init();
     }
 
+    private bool _initialProxyApplied;
+
     private async Task Init()
     {
         await ConfigHandler.InitBuiltinRouting(_config);
         await RefreshRoutingsMenu();
         await InboundDisplayStatus();
-        await ChangeSystemProxyAsync(_config.SystemProxyItem.SysProxyType, true);
+
+        // The system proxy is normally applied by StatusBarView as soon as it is activated
+        // (InitialSystemProxyApply), because the sudo password prompt handler only exists while that
+        // view lives. This fallback keeps the startup behaviour for layouts where it never activates.
+        await InitialSystemProxyApplyFallbackAsync();
 
         BlRouting = true;
+    }
+
+    /// <summary>
+    /// Applies the configured system proxy exactly once. Called from StatusBarView activation so the
+    /// password prompt can be shown, with a timed fallback from Init.
+    /// </summary>
+    public async Task InitialSystemProxyApply()
+    {
+        if (_initialProxyApplied)
+        {
+            return;
+        }
+        _initialProxyApplied = true;
+
+        await ChangeSystemProxyAsync(_config.SystemProxyItem.SysProxyType, true);
+    }
+
+    private async Task InitialSystemProxyApplyFallbackAsync()
+    {
+        for (var i = 0; i < 20 && !_initialProxyApplied; i++)
+        {
+            await Task.Delay(250);
+        }
+
+        await InitialSystemProxyApply();
     }
 
     private async Task CopyProxyCmdToClipboard()
@@ -326,6 +379,7 @@ public partial class StatusBarViewModel : MyReactiveObject
 
         var result = await Task.Run(ConnectionHandler.RunAvailabilityCheck);
         var msg = string.Format(ResUI.TestMeOutput, result.Time, result.Ip);
+        CurrentDelay = result.Time;
 
         var ip = result.GetValidIp();
         if (ip.IsNotEmpty())
@@ -373,9 +427,14 @@ public partial class StatusBarViewModel : MyReactiveObject
         await ConfigHandler.SaveConfig(_config);
     }
 
-    public async Task ChangeSystemProxyAsync(ESysProxyType type, bool blChange)
+    /// <summary>
+    /// Applies the system proxy and refreshes the tray / status bar state. The check states mirror the
+    /// user's selection (same as on Windows); the returned value says whether applying it actually
+    /// succeeded, which on macOS can fail without throwing (no administrator password, script error).
+    /// </summary>
+    public async Task<bool> ChangeSystemProxyAsync(ESysProxyType type, bool blChange)
     {
-        await SysProxyHandler.UpdateSysProxy(_config, false);
+        var applied = await SysProxyHandler.UpdateSysProxy(_config, false);
 
         BlSystemProxyClear = type == ESysProxyType.ForcedClear;
         BlSystemProxySet = type == ESysProxyType.ForcedChange;
@@ -386,6 +445,8 @@ public partial class StatusBarViewModel : MyReactiveObject
         {
             await DispatcherRefreshIconInteraction.HandleSafe(RxVoid.Default);
         }
+
+        return applied;
     }
 
     public async Task RefreshRoutingsMenu()
@@ -436,45 +497,60 @@ public partial class StatusBarViewModel : MyReactiveObject
 
         _config.TunModeItem.EnableTun = EnableTun;
 
-        if (EnableTun && AllowEnableTun() == false)
+        if (EnableTun && !await EnsureTunCredentialAsync())
         {
-            // When running as a non-administrator, reboot to administrator mode
-            if (Utils.IsWindows())
-            {
-                _config.TunModeItem.EnableTun = false;
-                await AppManager.Instance.RebootAsAdmin();
-                return;
-            }
-            else
-            {
-                var password = await PasswordInputInteraction.HandleSafe(RxVoid.Default);
-                if (password.IsNullOrEmpty())
-                {
-                    _config.TunModeItem.EnableTun = false;
-                    return;
-                }
-            }
+            // Without a credential the core cannot open the TUN adapter; EnsureTunCredentialAsync
+            // has already switched the setting back off and told the user why.
+            return;
         }
 
         await ConfigHandler.SaveConfig(_config);
         ReloadRequested.Publish();
     }
 
-    private bool AllowEnableTun()
+    /// <summary>
+    /// Makes sure the core can be started with the privileges TUN needs. The user is asked for a
+    /// password only when it is really required: sudo first tries whatever credential is already
+    /// cached (or granted passwordless), and only when that fails is the dialog raised.
+    /// Every path that cannot get a credential switches the TUN setting off, so the config always
+    /// matches the way the core is about to be launched.
+    /// </summary>
+    /// <returns>False when TUN has to stay off for this run.</returns>
+    public async Task<bool> EnsureTunCredentialAsync()
     {
+        if (!_config.TunModeItem.EnableTun)
+        {
+            return true;
+        }
+
         if (Utils.IsWindows())
         {
-            return Utils.IsAdministrator();
+            if (Utils.IsAdministrator())
+            {
+                return true;
+            }
+
+            DisableTunLocally();
+
+            // When running as a non-administrator, reboot to administrator mode
+            await AppManager.Instance.RebootAsAdmin();
+            return false;
         }
-        else if (Utils.IsLinux())
+
+        if (await SudoSessionManager.EnsureCredentialAsync(true))
         {
-            return AppManager.Instance.LinuxSudoPwd.IsNotEmpty();
+            return true;
         }
-        else if (Utils.IsMacOS())
-        {
-            return AppManager.Instance.LinuxSudoPwd.IsNotEmpty();
-        }
+
+        DisableTunLocally();
+        NoticeManager.Instance.Enqueue("TUN mode needs an administrator password to start the core. No password was provided, so TUN is left off for this run.");
         return false;
+    }
+
+    private void DisableTunLocally()
+    {
+        _config.TunModeItem.EnableTun = false;
+        EnableTun = false;
     }
 
     #endregion System proxy and Routings

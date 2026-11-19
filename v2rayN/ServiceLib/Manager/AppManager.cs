@@ -30,9 +30,20 @@ public sealed class AppManager
         }
     }
 
+    /// <summary>
+    /// The sudo password held for this run (never written to disk). Set through
+    /// <see cref="SudoSessionManager" />, which also keeps the sudo timestamp refreshed.
+    /// </summary>
     public string LinuxSudoPwd { get; set; }
 
     public bool ShowInTaskbar { get; set; }
+
+    /// <summary>
+    /// True once the shutdown has passed the point where a modal dialog is still acceptable: the
+    /// system proxy is cleared while the user can still answer the macOS sudo prompt, and anything
+    /// after that has to work with the credential already in hand.
+    /// </summary>
+    public bool IsExiting { get; private set; }
 
     public ECoreType RunningCoreType { get; set; }
 
@@ -129,7 +140,19 @@ public sealed class AppManager
         {
             Logging.SaveLog("AppExitAsync Begin");
 
-            await SysProxyHandler.UpdateSysProxy(_config, true);
+            // Clearing the system proxy can need the macOS administrator password. Do it while the
+            // app is still able to show that dialog, with a bounded wait so an ignored prompt does
+            // not stop the quit.
+            var finished = await ClearSystemProxyAsync(TimeSpan.FromSeconds(25), true);
+            IsExiting = true;
+
+            if (!finished)
+            {
+                // The prompt was neither answered nor refused in time: one more attempt, now without
+                // any dialog and without queueing behind the change that is still waiting for one.
+                await ClearSystemProxyAsync(TimeSpan.FromSeconds(5), false);
+            }
+
             AppEvents.AppExitRequested.Publish();
             await Task.Delay(50); //Wait for AppExitRequested to be processed
 
@@ -138,6 +161,8 @@ public sealed class AppManager
             await StatisticsManager.Instance.SaveTo();
             await CoreManager.Instance.CoreStop();
             StatisticsManager.Instance.Close();
+
+            SudoSessionManager.EndSession();
 
             Logging.SaveLog("AppExitAsync End");
         }
@@ -149,6 +174,23 @@ public sealed class AppManager
                 Shutdown(false);
             }
         }
+    }
+
+    /// <summary>
+    /// One bounded attempt at clearing the system proxy. Returns true when the attempt finished
+    /// (whether it changed anything or reported its own reason), false when it ran out of time.
+    /// </summary>
+    private async Task<bool> ClearSystemProxyAsync(TimeSpan budget, bool allowPasswordPrompt)
+    {
+        var clearTask = SysProxyHandler.UpdateSysProxy(_config, true, allowPasswordPrompt);
+        if (await Task.WhenAny(clearTask, Task.Delay(budget)) != clearTask)
+        {
+            Logging.SaveLog($"AppExitAsync: clearing the system proxy did not finish within {budget.TotalSeconds}s");
+            return false;
+        }
+
+        Logging.SaveLog($"AppExitAsync: system proxy clear finished (applied: {await clearTask})");
+        return true;
     }
 
     public void Shutdown(bool byUser)
