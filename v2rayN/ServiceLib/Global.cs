@@ -251,7 +251,8 @@ public class Global
         { EConfigType.TUIC, "tuic://" },
         { EConfigType.WireGuard, "wireguard://" },
         { EConfigType.Anytls, "anytls://" },
-        { EConfigType.Naive, "naive://" }
+        { EConfigType.Naive, "naive://" },
+        { EConfigType.ZhData, "zhdata://" }
     };
 
     public static readonly Dictionary<EConfigType, string> ProtocolTypes = new()
@@ -266,7 +267,8 @@ public class Global
         { EConfigType.TUIC, "tuic" },
         { EConfigType.WireGuard, "wireguard" },
         { EConfigType.Anytls, "anytls" },
-        { EConfigType.Naive, "naive" }
+        { EConfigType.Naive, "naive" },
+        { EConfigType.ZhData, "zhdata" }
     };
 
     public static readonly List<string> VmessSecurities =
@@ -661,6 +663,7 @@ public class Global
         { ECoreType.overtls, "ShadowsocksR-Live/overtls" },
         { ECoreType.shadowquic, "spongebob888/shadowquic" },
         { ECoreType.mieru, "enfein/mieru" },
+        { ECoreType.zhdata, "chentyson/zhdata-tunnel" },
         { ECoreType.zhenhanvn, "chentyson/zhenhanvn" },
     };
 

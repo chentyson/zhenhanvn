@@ -66,6 +66,7 @@ public sealed class CoreInfoManager
                 lst.Add(ECoreType.Xray);
                 lst.Add(ECoreType.mihomo);
                 lst.Add(ECoreType.sing_box);
+                lst.Add(ECoreType.zhdata);
             }
         }
 
@@ -86,6 +87,7 @@ public sealed class CoreInfoManager
             ECoreType.Xray => true,
             ECoreType.mihomo => true,
             ECoreType.sing_box => true,
+            ECoreType.zhdata => true,
             _ => false,
         };
     }
@@ -106,6 +108,7 @@ public sealed class CoreInfoManager
         var urlXray = GetCoreUrl(ECoreType.Xray);
         var urlMihomo = GetCoreUrl(ECoreType.mihomo);
         var urlSingbox = GetCoreUrl(ECoreType.sing_box);
+        var urlZhData = GetCoreUrl(ECoreType.zhdata);
 
         _coreInfo =
         [
@@ -238,6 +241,23 @@ public sealed class CoreInfoManager
                     LockedMaxVersion = new SemanticVersion(1, 14, int.MaxValue),
                     Match = "sing-box",
                     VersionArg = "version",
+                },
+
+                new CoreInfo
+                {
+                    CoreType = ECoreType.zhdata,
+                    CoreExes = ["zhdata", "zhdata-tunnel"],
+                    Arguments = "-c {0}",
+                    Url = urlZhData,
+                    ReleaseApiUrl = urlZhData.Replace(Global.GithubUrl, Global.GithubApiUrl),
+                    DownloadUrlWin64 = urlZhData + "/download/{0}/zhdata-windows-64.zip",
+                    DownloadUrlWinArm64 = urlZhData + "/download/{0}/zhdata-windows-arm64.zip",
+                    DownloadUrlLinux64 = urlZhData + "/download/{0}/zhdata-linux-64.zip",
+                    DownloadUrlLinuxArm64 = urlZhData + "/download/{0}/zhdata-linux-arm64.zip",
+                    DownloadUrlOSX64 = urlZhData + "/download/{0}/zhdata-macos-64.zip",
+                    DownloadUrlOSXArm64 = urlZhData + "/download/{0}/zhdata-macos-arm64.zip",
+                    Match = "zhdata",
+                    VersionArg = "-version",
                 },
 
                 new CoreInfo
