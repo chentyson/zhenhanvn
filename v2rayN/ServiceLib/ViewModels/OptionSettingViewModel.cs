@@ -310,6 +310,8 @@ public partial class OptionSettingViewModel : MyReactiveObject, ICloseable
                         || EnableDragDropSort != _config.UiItem.EnableDragDropSort
                         || EnableHWA != _config.GuiItem.EnableHWA
                         || CurrentFontFamily != _config.UiItem.CurrentFontFamily;
+        var needCoreReload = LogEnabled != _config.CoreBasicItem.LogEnabled
+                        || (Loglevel ?? string.Empty).Trim() != (_config.CoreBasicItem.Loglevel ?? string.Empty).Trim();
 
         //Core
         var inbound = _config.Inbound.First();
@@ -404,6 +406,11 @@ public partial class OptionSettingViewModel : MyReactiveObject, ICloseable
 
             NoticeManager.Instance.Enqueue(needReboot ? ResUI.NeedRebootTips : ResUI.OperationSuccess);
             RequestClose?.Invoke(this, EventArgs.Empty);
+
+            if (needCoreReload)
+            {
+                StatusBarViewModel.Instance.ReloadRequested.Publish();
+            }
         }
         else
         {

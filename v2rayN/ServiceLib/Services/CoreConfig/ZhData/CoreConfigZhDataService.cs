@@ -57,16 +57,14 @@ public class CoreConfigZhDataService(CoreConfigContext context)
 
     private static string ResolveLogLevel(Config config, ZhDataExtraItem extra)
     {
-        if (!config.CoreBasicItem.LogEnabled)
-        {
-            return Global.None;
-        }
-
-        var level = config.CoreBasicItem.Loglevel.TrimEx().ToLowerInvariant();
+        var level = (config.CoreBasicItem.Loglevel ?? string.Empty).Trim().ToLowerInvariant();
         return level switch
         {
-            Global.None or "error" or "warning" or "warn" or "info" or "debug" => level == "warn" ? "warning" : level,
-            "" => extra.Verbose ? "debug" : "info",
+            Global.None => Global.None,
+            "error" => "error",
+            "warning" or "warn" => "warning",
+            "info" => "info",
+            "debug" => "debug",
             _ => extra.Verbose ? "debug" : "info",
         };
     }
