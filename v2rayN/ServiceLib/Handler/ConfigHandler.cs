@@ -1014,23 +1014,25 @@ public static class ConfigHandler
         profileItem.StreamSecurity = string.Empty;
         profileItem.Network = string.Empty;
         profileItem.AllowInsecure = string.Empty;
+        var servers = ZhDataFmt.GetServers(profileItem);
+        if (servers.Count == 0)
+        {
+            return -1;
+        }
+
+        var extra = JsonUtils.Deserialize<ZhDataExtraItem>(profileItem.ProtoExtra) ?? new ZhDataExtraItem();
+        if (extra.Servers.Count == 0)
+        {
+            extra.Servers = servers;
+            profileItem.ProtoExtra = JsonUtils.Serialize(extra, false);
+        }
+
+        ZhDataFmt.ApplyFirstServer(profileItem, servers.First());
         if (profileItem.Address.IsNullOrEmpty() || profileItem.Port <= 0)
         {
-            var servers = ZhDataFmt.GetServers(profileItem);
-            if (servers.Count == 0)
-            {
-                return -1;
-            }
-
-            var index = servers.First().LastIndexOf(':');
-            if (index <= 0)
-            {
-                return -1;
-            }
-
-            profileItem.Address = servers.First()[..index];
-            profileItem.Port = servers.First()[(index + 1)..].ToInt();
+            return -1;
         }
+
         if (profileItem.Password.IsNullOrEmpty())
         {
             return -1;

@@ -80,11 +80,7 @@ public class ZhDataFmt : BaseFmt
 
         if (extra.Servers.Count == 0 && item != null)
         {
-            var server = GetServer(item.Address, item.Port);
-            if (server.IsNotEmpty())
-            {
-                extra.Servers.Add(server);
-            }
+            extra.Servers.AddRange(ParseAddressServers(item));
         }
 
         return extra;
@@ -102,14 +98,10 @@ public class ZhDataFmt : BaseFmt
 
         if (servers.Count == 0 && item != null)
         {
-            var server = GetServer(item.Address, item.Port);
-            if (server.IsNotEmpty())
-            {
-                servers.Add(server);
-            }
+            servers.AddRange(ParseAddressServers(item));
         }
 
-        return servers;
+        return servers.Distinct().ToList();
     }
 
     private static ProfileItem? ResolveZhData(string result)
@@ -215,6 +207,38 @@ public class ZhDataFmt : BaseFmt
 
         item.Address = host;
         item.Port = server[(index + 1)..].ToInt();
+    }
+
+    public static void ApplyFirstServer(ProfileItem item, string server)
+    {
+        SetFirstServer(item, server);
+    }
+
+    public static List<string> ParseAddressServers(ProfileItem? item)
+    {
+        var servers = new List<string>();
+        if (item == null || item.Address.IsNullOrEmpty())
+        {
+            return servers;
+        }
+
+        var raw = item.Address.Trim();
+        if (raw.IsNullOrEmpty())
+        {
+            return servers;
+        }
+
+        var parts = raw.Split([',', ';', ' ', '\r', '\n', '\t'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (var part in parts)
+        {
+            var server = part.Contains(':') ? NormalizeServer(part) : NormalizeServer($"{part}:{item.Port}");
+            if (server.IsNotEmpty())
+            {
+                servers.Add(server);
+            }
+        }
+
+        return servers.Distinct().ToList();
     }
 
     private static string NormalizeServer(string server)
