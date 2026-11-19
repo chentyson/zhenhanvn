@@ -109,13 +109,42 @@ public class ZhDataFmt : BaseFmt
             servers.AddRange(ParseAddressServers(item));
         }
 
-        return servers.Distinct().ToList();
+        servers = servers.Distinct().ToList();
+        if (extra.AutoPorts && extra.PortSpan > 1 && servers.Count == extra.PortSpan && IsAutoExpanded(servers, extra.PortSpan))
+        {
+            return [servers.First()];
+        }
+
+        return servers;
     }
 
     public static List<string> GetServers(ProfileItem? item, ZhDataExtraItem? extra = null)
     {
         extra ??= ParseExtra(item);
         return ExpandAutoPorts(GetUserServers(item, extra), extra);
+    }
+
+    private static bool IsAutoExpanded(List<string> servers, int portSpan)
+    {
+        if (!TrySplitServer(servers.First(), out var host, out var basePort))
+        {
+            return false;
+        }
+
+        for (var offset = 0; offset < portSpan; offset++)
+        {
+            if (!TrySplitServer(servers[offset], out var serverHost, out var serverPort))
+            {
+                return false;
+            }
+
+            if (!string.Equals(serverHost, host, StringComparison.OrdinalIgnoreCase) || serverPort != basePort + offset)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static List<string> ExpandAutoPorts(List<string> servers, ZhDataExtraItem extra)
