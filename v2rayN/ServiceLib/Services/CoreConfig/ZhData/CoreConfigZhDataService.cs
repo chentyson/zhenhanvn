@@ -28,7 +28,7 @@ public class CoreConfigZhDataService(CoreConfigContext context)
             {
                 Mode = "client",
                 Listen = $"{Global.Loopback}:{AppManager.Instance.GetLocalPort(EInboundProtocol.socks)}",
-                Server = servers.First(),
+                Server = string.Join(",", servers),
                 Servers = servers,
                 Uuid = _node.Password ?? string.Empty,
                 Conns = extra.Conns,
@@ -36,6 +36,7 @@ public class CoreConfigZhDataService(CoreConfigContext context)
                 DlConns = extra.DlConns,
                 Migrate = extra.Migrate,
                 SlotBase = extra.SlotBase,
+                LogLevel = extra.Verbose ? "debug" : "info",
                 Verbose = extra.Verbose,
             };
 

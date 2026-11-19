@@ -32,6 +32,9 @@ public class ZhDataClientConfig
     [JsonPropertyName("slotbase")]
     public int SlotBase { get; set; }
 
+    [JsonPropertyName("loglevel")]
+    public string LogLevel { get; set; } = "info";
+
     [JsonPropertyName("verbose")]
     public bool Verbose { get; set; }
 }
