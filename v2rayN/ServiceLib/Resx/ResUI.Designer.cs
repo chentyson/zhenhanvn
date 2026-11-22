@@ -1807,6 +1807,33 @@ namespace ServiceLib.Resx {
         }
         
         /// <summary>
+        ///   查找类似 Query account info 的本地化字符串。
+        /// </summary>
+        public static string menuQueryAccountInfo {
+            get {
+                return ResourceManager.GetString("menuQueryAccountInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Account info updated for {0} node(s) 的本地化字符串。
+        /// </summary>
+        public static string MsgQueryAccountInfoResult {
+            get {
+                return ResourceManager.GetString("MsgQueryAccountInfoResult", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 The selected node(s) returned no account info 的本地化字符串。
+        /// </summary>
+        public static string MsgQueryAccountInfoFailed {
+            get {
+                return ResourceManager.GetString("MsgQueryAccountInfoFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Test download speed 的本地化字符串。
         /// </summary>
         public static string menuSpeedServer {

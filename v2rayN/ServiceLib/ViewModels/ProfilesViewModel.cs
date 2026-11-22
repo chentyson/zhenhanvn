@@ -75,6 +75,7 @@ public partial class ProfilesViewModel : MyReactiveObject
     public ReactiveCommand<RxVoid, RxVoid> SortServerResultCmd { get; }
     public ReactiveCommand<RxVoid, RxVoid> RemoveInvalidServerResultCmd { get; }
     public ReactiveCommand<RxVoid, RxVoid> FastRealPingCmd { get; }
+    public ReactiveCommand<RxVoid, RxVoid> QueryAccountInfoCmd { get; }
 
     //servers export
     public ReactiveCommand<RxVoid, RxVoid> Export2ClientConfigCmd { get; }
@@ -193,6 +194,10 @@ public partial class ProfilesViewModel : MyReactiveObject
         SpeedServerCmd = ReactiveCommand.CreateFromTask(async () =>
         {
             await ServerSpeedtest(ESpeedActionType.Speedtest);
+        }, canEditRemove);
+        QueryAccountInfoCmd = ReactiveCommand.CreateFromTask(async () =>
+        {
+            await QueryAccountInfo();
         }, canEditRemove);
         SortServerResultCmd = ReactiveCommand.CreateFromTask(async () =>
         {
@@ -330,27 +335,8 @@ public partial class ProfilesViewModel : MyReactiveObject
                 return;
             }
 
-            var expireDate = AccountQueryService.FormatExpireDate(data) ?? "-";
-            var trafficInfo = AccountQueryService.FormatTraffic(data);
-            var expireLevel = AccountQueryService.GetExpireLevel(data.expiry);
-            var trafficVolume = data.unlimited_traffic ? 0 : data.volume;
-            var trafficUsed = data.unlimited_traffic ? 0 : data.used;
-            var trafficLevel = AccountQueryService.GetTrafficLevel(trafficVolume, trafficUsed);
-
-            ProfileExManager.Instance.SetAccountInfo(node.IndexId, data.expiry, expireDate, trafficInfo, trafficVolume, trafficUsed);
+            ApplyAccountInfo(node, data);
             await ProfileExManager.Instance.SaveTo();
-
-            RxSchedulers.MainThreadScheduler.Schedule(() =>
-            {
-                var item = ProfileItems.FirstOrDefault(it => it.IndexId == node.IndexId);
-                if (item != null)
-                {
-                    item.ExpireDate = expireDate;
-                    item.ExpireLevel = expireLevel;
-                    item.TrafficInfo = trafficInfo;
-                    item.TrafficLevel = trafficLevel;
-                }
-            });
 
             // The queried node is always the active one, and this query runs
             // only when the service is (re)started — node activation or the
@@ -365,6 +351,66 @@ public partial class ProfilesViewModel : MyReactiveObject
         {
             // Silent: the active node may not expose the query endpoint.
         }
+    }
+
+    /// <summary>
+    /// Manual query (server list context menu): asks for the account info of every selected
+    /// node and reports the outcome, unlike the startup query which stays silent.
+    /// </summary>
+    private async Task QueryAccountInfo()
+    {
+        var nodes = await GetProfileItems(true);
+        if (nodes is null || nodes.Count == 0)
+        {
+            NoticeManager.Instance.Enqueue(ResUI.PleaseSelectServer);
+            return;
+        }
+
+        var updated = 0;
+        foreach (var node in nodes)
+        {
+            var data = await AccountQueryService.QueryNodeAsync(node);
+            if (data is null)
+            {
+                // Keep whatever was stored before: a node without the endpoint simply stays as it was.
+                continue;
+            }
+
+            ApplyAccountInfo(node, data);
+            updated++;
+        }
+        await ProfileExManager.Instance.SaveTo();
+
+        NoticeManager.Instance.Enqueue(updated > 0
+            ? string.Format(ResUI.MsgQueryAccountInfoResult, updated)
+            : ResUI.MsgQueryAccountInfoFailed);
+    }
+
+    /// <summary>
+    /// Stores one query result and refreshes the matching row of the server list.
+    /// </summary>
+    private void ApplyAccountInfo(ProfileItem node, AccountQueryData data)
+    {
+        var expireDate = AccountQueryService.FormatExpireDate(data) ?? "-";
+        var trafficInfo = AccountQueryService.FormatTraffic(data);
+        var expireLevel = AccountQueryService.GetExpireLevel(data.expiry);
+        var trafficVolume = data.unlimited_traffic ? 0 : data.volume;
+        var trafficUsed = data.unlimited_traffic ? 0 : data.used;
+        var trafficLevel = AccountQueryService.GetTrafficLevel(trafficVolume, trafficUsed);
+
+        ProfileExManager.Instance.SetAccountInfo(node.IndexId, data.expiry, expireDate, trafficInfo, trafficVolume, trafficUsed);
+
+        RxSchedulers.MainThreadScheduler.Schedule(() =>
+        {
+            var item = ProfileItems.FirstOrDefault(it => it.IndexId == node.IndexId);
+            if (item != null)
+            {
+                item.ExpireDate = expireDate;
+                item.ExpireLevel = expireLevel;
+                item.TrafficInfo = trafficInfo;
+                item.TrafficLevel = trafficLevel;
+            }
+        });
     }
 
     /// <summary>

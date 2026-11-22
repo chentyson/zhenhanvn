@@ -5,6 +5,9 @@ namespace ServiceLib.Services;
 /// account expiry. The request is sent to the node's own address on a fixed port:
 ///   http://{node.Address}:{AccountQueryPort}{AccountQueryPath}?key={node.Password}
 /// It tries via the local SOCKS proxy first (GFW-safe), then falls back to direct.
+/// zhdata nodes cannot be reached that way: the core tunnels everything and may sit behind
+/// several transparent forwarding hops, so their query is sent to a reserved hostname through
+/// the local zhdata SOCKS port and carried inside the zhdata data channel.
 /// </summary>
 public static class AccountQueryService
 {
@@ -16,6 +19,9 @@ public static class AccountQueryService
     /// <summary>Remaining traffic ratio at or below which the traffic column turns red.</summary>
     private const double TrafficCriticalRatio = 0.01;
 
+    // One retry after this pause for a query stream that a cold tunnel dropped.
+    private static readonly TimeSpan QueryRetryDelay = TimeSpan.FromMilliseconds(400);
+
     /// <summary>
     /// Queries a single node and returns its account data, or null on any failure.
     /// </summary>
@@ -26,23 +32,82 @@ public static class AccountQueryService
             return null;
         }
 
-        var url = $"http://{node.Address}:{Global.AccountQueryPort}{Global.AccountQueryPath}?key={Utils.UrlEncode(node.Password)}";
+        var json = node.ConfigType == EConfigType.ZhData
+            ? await QueryViaZhDataTunnelAsync(node)
+            : await QueryViaPanelAsync(node);
 
-        string? json = null;
+        return ParseAccountJson(json);
+    }
+
+    /// <summary>
+    /// Plain panel query: the node answers on its own address, on the fixed query port.
+    /// </summary>
+    private static async Task<string?> QueryViaPanelAsync(ProfileItem node)
+    {
+        var url = $"http://{node.Address}:{Global.AccountQueryPort}{Global.AccountQueryPath}?key={Utils.UrlEncode(node.Password)}";
 
         // Try via the local SOCKS proxy first (if it is running).
         var port = AppManager.Instance.GetLocalPort(EInboundProtocol.socks);
         if (await SocketCheck(Global.Loopback, port))
         {
-            json = await TryGetAsync(url, new WebProxy($"socks5://{Global.Loopback}:{port}"));
+            var json = await TryGetAsync(url, new WebProxy($"socks5://{Global.Loopback}:{port}"));
+            if (json.IsNotEmpty())
+            {
+                return json;
+            }
         }
 
         // Fall back to a direct connection.
-        if (json is null)
+        return await TryGetAsync(url, null);
+    }
+
+    /// <summary>
+    /// zhdata query: a reserved hostname is requested through the local zhdata SOCKS port, which
+    /// the core recognizes and turns into a query carried by its own data channel. That hostname
+    /// is only understood on this path, so there is no direct fallback here.
+    /// </summary>
+    private static async Task<string?> QueryViaZhDataTunnelAsync(ProfileItem node)
+    {
+        var url = $"http://{Global.AccountQueryZhDataHost}{Global.AccountQueryPath}?key={Utils.UrlEncode(node.Password)}";
+
+        var port = GetZhDataListenPort(node);
+        if (port <= 0 || !await SocketCheck(Global.Loopback, port))
         {
-            json = await TryGetAsync(url, null);
+            return null;
         }
 
+        var proxy = new WebProxy($"socks5://{Global.Loopback}:{port}");
+        var json = await TryGetAsync(url, proxy);
+        if (json.IsNullOrEmpty())
+        {
+            // A cold or freshly reconnected tunnel can tear the first stream down before the
+            // request lands, which reads as an empty answer. One retry covers that; a real
+            // "not found" answer is JSON and never retried here.
+            await Task.Delay(QueryRetryDelay);
+            json = await TryGetAsync(url, proxy);
+        }
+
+        return json;
+    }
+
+    /// <summary>
+    /// The port the running zhdata core listens on: it keeps the local socks port unless a routing
+    /// core fronts it, in which case it was moved by the chained core offset.
+    /// </summary>
+    private static int GetZhDataListenPort(ProfileItem node)
+    {
+        var config = AppManager.Instance.Config;
+        var coreType = AppManager.Instance.GetCoreType(node, node.ConfigType);
+        if (ConfigHandler.NeedsRoutingFrontCore(node, coreType) && ConfigHandler.GetRoutingFrontCoreType() != null)
+        {
+            return ConfigHandler.GetZhDataChainPort(config);
+        }
+
+        return AppManager.Instance.GetLocalPort(EInboundProtocol.socks);
+    }
+
+    private static AccountQueryData? ParseAccountJson(string? json)
+    {
         if (json.IsNullOrEmpty())
         {
             return null;
@@ -73,23 +138,25 @@ public static class AccountQueryService
             return "-";
         }
 
-        if (!data.expiry_str.IsNullOrEmpty())
-        {
-            // Show only the date portion (e.g. "2027-10-19 03:29:59" -> "2027-10-19").
-            var parts = data.expiry_str.Split(' ');
-            return parts.Length > 0 ? parts[0] : data.expiry_str;
-        }
-
         if (data.expiry > 0)
         {
             try
             {
+                // The unix timestamp is authoritative: a core answers in its own timezone, so the
+                // text form (expiry_str) could name another day.
                 return DateTimeOffset.FromUnixTimeSeconds(data.expiry).LocalDateTime.ToString("yyyy-MM-dd");
             }
             catch
             {
                 return null;
             }
+        }
+
+        if (!data.expiry_str.IsNullOrEmpty())
+        {
+            // Show only the date portion (e.g. "2027-10-19 03:29:59" -> "2027-10-19").
+            var parts = data.expiry_str.Split(' ');
+            return parts.Length > 0 ? parts[0] : data.expiry_str;
         }
 
         return null;

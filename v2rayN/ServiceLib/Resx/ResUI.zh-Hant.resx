@@ -498,6 +498,15 @@
   <data name="menuSortServerResult" xml:space="preserve">
     <value>按測試結果排序</value>
   </data>
+  <data name="menuQueryAccountInfo" xml:space="preserve">
+    <value>查詢套餐資訊</value>
+  </data>
+  <data name="MsgQueryAccountInfoResult" xml:space="preserve">
+    <value>已更新 {0} 個節點的到期/流量資訊</value>
+  </data>
+  <data name="MsgQueryAccountInfoFailed" xml:space="preserve">
+    <value>所選節點未返回套餐資訊</value>
+  </data>
   <data name="menuSpeedServer" xml:space="preserve">
     <value>測試速度 (多選)</value>
   </data>

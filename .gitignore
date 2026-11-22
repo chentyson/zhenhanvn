@@ -423,3 +423,6 @@ zt0117/dist/
 zt0117/*.exe
 zt0117/*.err
 zt0117/rawout.txt
+
+# local test builds, not deliverables
+*-test.zip

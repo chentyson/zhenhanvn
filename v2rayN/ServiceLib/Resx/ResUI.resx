@@ -498,6 +498,15 @@
   <data name="menuSortServerResult" xml:space="preserve">
     <value>Sort by test result</value>
   </data>
+  <data name="menuQueryAccountInfo" xml:space="preserve">
+    <value>Query account info</value>
+  </data>
+  <data name="MsgQueryAccountInfoResult" xml:space="preserve">
+    <value>Account info updated for {0} node(s)</value>
+  </data>
+  <data name="MsgQueryAccountInfoFailed" xml:space="preserve">
+    <value>The selected node(s) returned no account info</value>
+  </data>
   <data name="menuSpeedServer" xml:space="preserve">
     <value>Test download speed</value>
   </data>

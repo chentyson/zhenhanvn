@@ -119,6 +119,11 @@ public class Global
     public const string AccountQueryPath = "/62444/query";
     public const int AccountQueryTimeout = 5;
 
+    // Reserved hostname for the zhdata account query. A zhdata node may only be reachable through
+    // its own (possibly multi-hop) tunnel, so the query is requested against this hostname over the
+    // local zhdata SOCKS port; the core recognizes it and carries the query inside its data channel.
+    public const string AccountQueryZhDataHost = "query.zhdata";
+
     // Customer service renewal page, opened in the browser when the active
     // node has expired: https://cs.boosoo.cn/?input=续费<别名>
     public const string AccountRenewUrl = "https://cs.boosoo.cn/?input=";
