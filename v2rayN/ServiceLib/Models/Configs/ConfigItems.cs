@@ -147,7 +147,10 @@ public class TunModeItem
     public int Mtu { get; set; }
     public bool EnableIPv6Address { get; set; }
     public string IcmpRouting { get; set; }
-    public bool EnableLegacyProtect { get; set; } = true;
+
+    // Off by default: this mode hands the TUN to a sing-box core that is not part of the base
+    // install, and the running core then gets no TUN of its own at all.
+    public bool EnableLegacyProtect { get; set; } = false;
     public List<string>? RouteExcludeAddress { get; set; }
     public string IPv4Address { get; set; }
     public string IPv6Address { get; set; }

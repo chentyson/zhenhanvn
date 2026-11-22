@@ -26,10 +26,14 @@ public class CoreConfigZhDataService(CoreConfigContext context)
             }
 
             var loglevel = ResolveLogLevel(_config, extra);
+            // Without a fronting core zhdata owns the system proxy port. When a routing core fronts
+            // it to apply the routing rules, that core owns the system proxy port and zhdata moves
+            // to the internal port the front core forwards to (CoreConfigContext.ChainedListenPort).
+            var listenPort = context.ChainedListenPort ?? AppManager.Instance.GetLocalPort(EInboundProtocol.socks);
             var config = new ZhDataClientConfig
             {
                 Mode = "client",
-                Listen = $"{Global.Loopback}:{AppManager.Instance.GetLocalPort(EInboundProtocol.socks)}",
+                Listen = $"{Global.Loopback}:{listenPort}",
                 Server = string.Join(",", servers),
                 Servers = servers,
                 Uuid = _node.Password ?? string.Empty,
@@ -41,6 +45,11 @@ public class CoreConfigZhDataService(CoreConfigContext context)
                 LogLevel = loglevel,
                 Verbose = loglevel.Equals("debug", StringComparison.OrdinalIgnoreCase),
             };
+
+            if (context.ChainedListenPort.HasValue)
+            {
+                Logging.SaveLog($"{_tag} fronted by a routing core: listening on {listenPort}, the routing rules are applied by the front core");
+            }
 
             ret.Success = true;
             ret.Msg = ResUI.SuccessfulConfiguration;

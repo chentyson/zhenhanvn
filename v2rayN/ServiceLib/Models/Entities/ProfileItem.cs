@@ -159,6 +159,63 @@ public class ProfileItem
         return AllowInsecure == Global.StringTrue;
     }
 
+    /// <summary>
+    /// A comparable snapshot of everything this node's core config is built from, so that a caller
+    /// can tell whether the running core has to be rebuilt after a node was re-imported. Display-only
+    /// properties (remarks, log visibility) are left out: renaming a node must not look like a change
+    /// that needs the core restarted.
+    /// Returns null when part of the config is not carried by this row and cannot be compared here -
+    /// the external config file of a custom/outbound node, or the members of a group/chain node.
+    /// </summary>
+    public string? GetCoreConfigSignature()
+    {
+        if (ConfigType.IsComplexType())
+        {
+            return null;
+        }
+
+        return string.Join('|',
+            IndexId,
+            ConfigType.ToString(),
+            ((int)CoreType.GetValueOrDefault()).ToString(),
+            ConfigVersion.ToString(),
+            PreSocksPort?.ToString() ?? string.Empty,
+            Address,
+            Port.ToString(),
+            Password,
+            Username,
+            Network,
+            StreamSecurity,
+            AllowInsecure,
+            Sni,
+            Alpn,
+            Fingerprint,
+            PublicKey,
+            ShortId,
+            SpiderX,
+            Mldsa65Verify,
+            MuxEnabled?.ToString() ?? string.Empty,
+            Cert,
+            CertSha,
+            EchConfigList,
+            VerifyPeerCertByName,
+            Finalmask,
+            ProtoExtra,
+            TransportExtra,
+#pragma warning disable CS0618 // legacy properties still feed the config generators of old imports
+            HeaderType,
+            RequestHost,
+            Path,
+            Extra,
+            Ports,
+            AlterId.ToString(),
+            Flow,
+            Id,
+            Security
+#pragma warning restore CS0618
+        );
+    }
+
     #endregion function
 
     [PrimaryKey]

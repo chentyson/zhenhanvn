@@ -50,6 +50,23 @@ public sealed class CoreInfoManager
         return fileName;
     }
 
+    /// <summary>
+    /// Whether a core is installed, without the "core not found" log that
+    /// <see cref="GetCoreExecFile" /> writes. For probes that ask about a core which may legitimately
+    /// be absent.
+    /// </summary>
+    public bool IsCoreInstalled(ECoreType coreType)
+    {
+        var coreInfo = GetCoreInfo(coreType);
+        if (coreInfo == null)
+        {
+            return false;
+        }
+
+        return coreInfo.CoreExes.Any(name =>
+            File.Exists(Utils.GetBinPath(Utils.GetExeName(name), coreInfo.CoreType.ToString())));
+    }
+
     public List<ECoreType> GetCheckUpdateCoreTypes()
     {
         var lst = new List<ECoreType>();
@@ -63,8 +80,9 @@ public sealed class CoreInfoManager
 
             if (!(Utils.IsWindows() && Environment.OSVersion.Version.Major < 10))
             {
+                // No mihomo row: it is not a selectable core any more, it is only reached by a
+                // clash/yaml full config subscription, and its download is not offered here.
                 lst.Add(ECoreType.Xray);
-                lst.Add(ECoreType.mihomo);
                 lst.Add(ECoreType.sing_box);
                 lst.Add(ECoreType.zhdata);
             }
@@ -85,9 +103,10 @@ public sealed class CoreInfoManager
         {
             ECoreType.zhenhanvn => !Utils.IsPackagedInstall(),
             ECoreType.Xray => true,
-            ECoreType.mihomo => true,
             ECoreType.sing_box => true,
             ECoreType.zhdata => true,
+            // mihomo is not offered for update (see GetCheckUpdateCoreTypes); a clash subscription
+            // node can still run on a mihomo binary that the user places in bin\mihomo.
             _ => false,
         };
     }

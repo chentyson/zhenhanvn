@@ -22,6 +22,10 @@ public record CoreConfigContext
     // Typically, it is the core of the outbound chain
     public HashSet<ECoreType> ProtectCoreTypeList { get; init; } = [];
 
+    // Set when another core fronts this one: the front core owns the system proxy port and this
+    // core has to listen on this internal port instead. Null keeps the default system proxy port.
+    public int? ChainedListenPort { get; init; }
+
     public bool IsWindows { get; init; }
     public bool IsMacOS { get; init; }
 

@@ -153,6 +153,13 @@ public class CoreConfigContextBuilder
         var preResult = await BuildPreSocksIfNeeded(mainResult.Context);
         if (preResult is null)
         {
+            if (ConfigHandler.NeedsRoutingFrontCore(mainResult.Context.Node, mainResult.Context.RunCoreType)
+                && ConfigHandler.GetRoutingFrontCoreType() is null)
+            {
+                mainResult.ValidatorResult.Warnings.Add(
+                    $"The {nameof(ECoreType.zhdata)} core has no routing of its own and neither {nameof(ECoreType.sing_box)} nor {nameof(ECoreType.Xray)} is installed, so the routing rules are not applied and all traffic goes through the tunnel.");
+            }
+
             return new CoreConfigContextBuilderAllResult(mainResult, null);
         }
 
@@ -163,6 +170,11 @@ public class CoreConfigContextBuilder
                 IsTunEnabled = false,
                 // main core doesn't handle tun directly when pre-socks is used
                 ProtectDomainList = [.. mainResult.Context.ProtectDomainList, .. preResult.Context.ProtectDomainList],
+                // The front core owns the system proxy port, so a core that would otherwise bind
+                // it (zhdata) has to move to the port the front core dials out to.
+                ChainedListenPort = mainResult.Context.RunCoreType == ECoreType.zhdata
+                    ? preResult.Context.Node.Port
+                    : mainResult.Context.ChainedListenPort,
             },
         };
         if (mainResult.Context.IsTunEnabled

@@ -15,6 +15,10 @@ public class Global
     public const string CoreSpeedtestConfigFileName = "configTest{0}.json";
     public const string ClashMixinConfigFileName = "Mixin.yaml";
 
+    // A core that has no routing of its own (zhdata) is fronted by a routing core which takes the
+    // system proxy port; the core itself moves to the system proxy port plus this offset.
+    public const int ChainedCorePortOffset = 10;
+
     public const string NamespaceSample = "ServiceLib.Sample.";
     public const string V2raySampleClient = NamespaceSample + "SampleClientConfig";
     public const string SingboxSampleClient = NamespaceSample + "SingboxSampleClientConfig";
@@ -663,7 +667,7 @@ public class Global
         { ECoreType.overtls, "ShadowsocksR-Live/overtls" },
         { ECoreType.shadowquic, "spongebob888/shadowquic" },
         { ECoreType.mieru, "enfein/mieru" },
-        { ECoreType.zhdata, "chentyson/zhdata-tunnel" },
+        { ECoreType.zhdata, "chentyson/zhdata" },
         { ECoreType.zhenhanvn, "chentyson/zhenhanvn" },
     };
 

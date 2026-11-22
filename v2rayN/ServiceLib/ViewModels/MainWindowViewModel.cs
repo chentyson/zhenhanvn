@@ -385,22 +385,19 @@ public partial class MainWindowViewModel : MyReactiveObject
         NoticeManager.Instance.SendMessageEx(msg);
         if (success)
         {
+            // The update re-creates the nodes owned by the subscription, but the core only has to be
+            // reloaded when that touched the node it is running: a reload stops the core, removes the
+            // TUN adapter and drops every running connection, which for a scheduled update of an
+            // unrelated subscription is a costly no-op.
             var indexIdOld = _config.IndexId;
+            var nodeOld = indexIdOld.IsNotEmpty() ? await AppManager.Instance.GetProfileItem(indexIdOld) : null;
+            var signatureOld = nodeOld?.GetCoreConfigSignature();
+
             await RefreshServersDispatcherAsync();
 
-            // If indexId changed or subIndexId is empty, directly reload.
-            if (indexIdOld != _config.IndexId || _config.SubIndexId.IsNullOrEmpty())
+            if (await ActiveNodeNeedsReload(indexIdOld, nodeOld, signatureOld))
             {
                 await Reload();
-            }
-            else
-            {
-                // The activity config belongs to the current group.
-                var profile = await AppManager.Instance.GetProfileItem(_config.IndexId);
-                if (profile != null && profile.Subid == _config.SubIndexId)
-                {
-                    await Reload();
-                }
             }
 
             if (_config.UiItem.EnableAutoAdjustMainLvColWidth)
@@ -408,6 +405,40 @@ public partial class MainWindowViewModel : MyReactiveObject
                 await ProfilesViewModel.AdjustMainLvColWidth();
             }
         }
+    }
+
+    /// <summary>
+    /// Whether the scheduled subscription update changed what the core is running, checked against
+    /// the active node taken before the list was refreshed.
+    /// </summary>
+    private async Task<bool> ActiveNodeNeedsReload(string indexIdOld, ProfileItem? nodeOld, string? signatureOld)
+    {
+        if (indexIdOld.IsNullOrEmpty())
+        {
+            return false;
+        }
+
+        // The refresh moved the active node to another row (a subscription node was replaced).
+        if (indexIdOld != _config.IndexId)
+        {
+            return true;
+        }
+
+        var nodeNew = await AppManager.Instance.GetProfileItem(_config.IndexId);
+        if (nodeNew is null)
+        {
+            return true;
+        }
+
+        var signatureNew = nodeNew.GetCoreConfigSignature();
+        if (signatureOld is null || signatureNew is null)
+        {
+            // Custom/outbound/group nodes carry part of their config outside the profile row, so it
+            // cannot be compared here: keep the previous rule for them.
+            return _config.SubIndexId.IsNullOrEmpty() || nodeNew.Subid == _config.SubIndexId;
+        }
+
+        return signatureOld != signatureNew;
     }
 
     private async Task UpdateStatisticsHandler(ServerSpeedItem update)

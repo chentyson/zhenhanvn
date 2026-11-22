@@ -92,7 +92,9 @@ public static class ConfigHandler
             EnableTun = false,
             Mtu = 9000,
             IcmpRouting = Global.TunIcmpRoutingPolicies.First(),
-            EnableLegacyProtect = true,
+            // The legacy protect mode can only be served by sing-box and it takes the TUN away from
+            // the running core, so leaving it on without that core installed means no TUN at all.
+            EnableLegacyProtect = false,
         };
         config.GuiItem ??= new();
         if (!Global.RootCertProviders.Contains(config.GuiItem.RootCertProvider))
@@ -1596,7 +1598,8 @@ public static class ConfigHandler
 
     /// <summary>
     /// Get a SOCKS server profile for pre-SOCKS functionality
-    /// Used when TUN mode is enabled or when a custom config has a pre-SOCKS port
+    /// Used when a core has no routing of its own (zhdata), when TUN mode is enabled with the
+    /// legacy protect mode, or when a custom config has a pre-SOCKS port
     /// </summary>
     /// <param name="config">Current configuration</param>
     /// <param name="node">Server node that might need pre-SOCKS</param>
@@ -1606,7 +1609,26 @@ public static class ConfigHandler
     {
         ProfileItem? itemSocks = null;
         var enableLegacyProtect = config.TunModeItem.EnableLegacyProtect;
-        if (node.ConfigType != EConfigType.Custom
+        if (NeedsRoutingFrontCore(node, coreType))
+        {
+            // The zhdata core tunnels everything and has no routing of its own, so the routing
+            // rules of the selected routing item are applied by a fronting core that can do
+            // routing. That core takes the system proxy port and forwards the proxied traffic to
+            // zhdata, which moves to GetZhDataChainPort. When no such core is installed there is
+            // nothing to front it with, so the node keeps the all-through-tunnel behaviour.
+            var frontCoreType = GetRoutingFrontCoreType();
+            if (frontCoreType != null)
+            {
+                itemSocks = new ProfileItem()
+                {
+                    CoreType = frontCoreType.Value,
+                    ConfigType = EConfigType.SOCKS,
+                    Address = Global.Loopback,
+                    Port = GetZhDataChainPort(config)
+                };
+            }
+        }
+        else if (node.ConfigType != EConfigType.Custom
             && coreType != ECoreType.sing_box
             && config.TunModeItem.EnableTun
             && enableLegacyProtect)
@@ -1636,6 +1658,49 @@ public static class ConfigHandler
     }
 
     /// <summary>
+    /// Whether the node's core is unable to apply the routing rules of the selected routing item
+    /// by itself and therefore needs a fronting core that does.
+    /// The zhdata core is a plain tunnel: its client config has no routing section, it never dials
+    /// anything directly and it even forwards domains to the server for resolution, so every
+    /// request would otherwise leave through the tunnel.
+    /// </summary>
+    /// <param name="node">Server node</param>
+    /// <param name="coreType">Core type being used</param>
+    public static bool NeedsRoutingFrontCore(ProfileItem node, ECoreType coreType)
+    {
+        return coreType == ECoreType.zhdata && node.ConfigType != EConfigType.Custom;
+    }
+
+    /// <summary>
+    /// The core to front a routing-incapable core with. sing-box is preferred; xray is used when
+    /// only xray is installed. Null when neither is installed, in which case the node keeps its
+    /// previous "everything through the tunnel" form instead of not starting at all.
+    /// </summary>
+    public static ECoreType? GetRoutingFrontCoreType()
+    {
+        foreach (var coreType in new[] { ECoreType.sing_box, ECoreType.Xray })
+        {
+            if (CoreInfoManager.Instance.IsCoreInstalled(coreType))
+            {
+                return coreType;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The internal port a zhdata core listens on when a sing-box core fronts it and owns the
+    /// system proxy port. Falls back to the system proxy port when the offset would overflow.
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    public static int GetZhDataChainPort(Config config)
+    {
+        var localPort = AppManager.Instance.GetLocalPort(EInboundProtocol.socks);
+        var port = localPort + Global.ChainedCorePortOffset;
+        return port > ushort.MaxValue ? localPort : port;
+    }
+
     /// Remove servers with invalid test results (timeout)
     /// Useful for cleaning up subscription lists
     /// </summary>

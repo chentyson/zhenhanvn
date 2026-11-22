@@ -19,6 +19,7 @@ public class FmtHandlerTests
         [EConfigType.WireGuard] = CreateWireguardProfile,
         [EConfigType.Anytls] = CreateAnytlsProfile,
         [EConfigType.Naive] = () => CreateNaiveProfile(false),
+        [EConfigType.ZhData] = CreateZhDataProfile,
     };
 
     [Test]
@@ -419,6 +420,19 @@ public class FmtHandlerTests
             Port = 1080,
             Username = "user",
             Password = "pass",
+        };
+    }
+
+    private static ProfileItem CreateZhDataProfile()
+    {
+        return new ProfileItem
+        {
+            ConfigType = EConfigType.ZhData,
+            CoreType = ECoreType.zhdata,
+            Remarks = "zhdata demo",
+            Address = "zhdata.example",
+            Port = 8443,
+            Password = "zhdata-pass",
         };
     }
 
